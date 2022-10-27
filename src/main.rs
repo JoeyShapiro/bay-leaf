@@ -11,6 +11,7 @@ fn main() {
     let mut z: i32 = 0;
     let mut theta: i32 = 0;
     let mut phi: i32 = 0;
+    let fov: i32 = 90;
     
     world[5][5][5] = 2;
     
@@ -46,13 +47,13 @@ fn main() {
             theta%=360;
         } else if input == 68 {
             theta-=90;
-            theta%=360;
+            theta = theta.rem_euclid(360); // % is actually rem. for neg, this has a different result
         } else if input == 65 {
             phi+=90;
             phi%=360;
         } else if input == 66 {
             phi-=90;
-            phi%=360;
+            phi = phi.rem_euclid(360);
         }
 
         world[x as usize][y as usize][z as usize] = 1;
@@ -71,10 +72,11 @@ fn main() {
         mvprintw(3, 0, &("z: ".to_owned()+&z.to_string()));
         mvprintw(4, 0, &("theta: ".to_owned()+&theta.to_string()));
         mvprintw(5, 0, &("phi: ".to_owned()+&phi.to_string()));
+        mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
 
         let distance = f64::sqrt((i32::pow(5 - x, 2) + i32::pow(5 - y, 2) + i32::pow(5 - z, 2)) as f64);
 
-        mvprintw(6, 0, &("d: ".to_owned()+&distance.to_string()));
+        mvprintw(7, 0, &("d: ".to_owned()+&distance.to_string()));
 
 
         refresh();
