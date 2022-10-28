@@ -56,8 +56,8 @@ fn main() {
         }
 
         let ray_step: f64 = fov as f64 / max_x as f64;
-        let mut ray_angle: f64 = (theta as f64 - fov as f64 / 2.0).rem_euclid(360.0);
         for screen_y in 0..max_y {
+            let mut ray_angle: f64 = (theta as f64 - fov as f64 / 2.0).rem_euclid(360.0);
             for screen_x in 0..max_x {
                 ray_angle+=ray_step;
                 perspective[screen_y as usize][screen_x as usize] = send_ray(x, y, z, ray_angle, &objects);
@@ -78,7 +78,6 @@ fn main() {
         let distance = f64::sqrt((i32::pow(5 - x, 2) + i32::pow(5 - y, 2) + i32::pow(5 - z, 2)) as f64);
 
         mvprintw(7, 0, &("d: ".to_owned()+&distance.to_string()));
-
 
         refresh();
     }
