@@ -1,4 +1,5 @@
 use ncurses::*;
+use std::fmt;
 
 const W_SIZE: i32 = 8;
 
@@ -23,7 +24,16 @@ fn main() {
     getmaxyx(stdscr(), &mut max_y, &mut max_x);
 
     let mut perspective: Vec<Vec<i32>> = vec![vec![Default::default(); max_x as usize]; max_y as usize];
-    
+
+    let projection_matrix = create_projection_matrix(max_y as f64 / max_x as f64, 90.0, 0.1, 1000.0);
+    let some_point = Point {
+        x: 5.0, y: 5.0, z: 1.0, w: 1.0
+    };
+
+    let pn = project_point(some_point, max_x as f64, max_y as f64, projection_matrix);
+
+    println!("{}", pn);
+
     loop {
         let input = getch();
         
@@ -81,6 +91,73 @@ fn main() {
 
         refresh();
     }
+}
+
+fn create_projection_matrix(a: f64, fov: f64, znear: f64, zfar: f64) -> [[f64; 4]; 4] {
+    let mut proj_mat = [[0.0f64; 4]; 4];
+
+    let f = 1.0 / (fov / 2.0).tan();
+    let scale = zfar / (zfar - znear);
+
+    proj_mat[0][0] = a*f;
+    proj_mat[1][1] = f;
+    proj_mat[2][2] = scale;
+    proj_mat[2][3] = 1.0;
+    proj_mat[3][2] = -scale*znear;
+
+    return proj_mat
+}
+
+struct Point {
+    x: f64,
+    y: f64,
+    z: f64,
+    w: f64
+}
+
+impl fmt::Display for Point {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "x: {}, y: {}, z: {}, w: {}", self.x, self.y, self.z, self.w)
+    }
+}
+
+fn matrix_mul(p: Point, mat: [[f64; 4]; 4]) -> Point {
+    let point_prime = Point { // this needs +3 to z
+        x: p.x * mat[0][0] + p.y * mat[1][0] + (p.z+3.0) * mat[2][0] + p.w * mat[3][0], 
+        y: p.x * mat[0][1] + p.y * mat[1][1] + (p.z+3.0) * mat[2][1] + p.w * mat[3][1], 
+        z: p.x * mat[0][2] + p.y * mat[1][2] + (p.z+3.0) * mat[2][2] + p.w * mat[3][2], 
+        w: p.x * mat[0][3] + p.y * mat[1][3] + (p.z+3.0) * mat[2][3] + p.w * mat[3][3]
+    };
+    // for i in 0..4 { // this gets lucky with (5,5,1,1)
+    //     println!("{} {}", i, mat[i][3]);
+    //     point_prime.x += p.x * mat[i][0];
+    //     point_prime.y += p.y * mat[i][1];
+    //     point_prime.z += p.z * mat[i][2];
+    //     point_prime.w += p.w * mat[i][3];
+    //     println!("{}", point_prime);
+    // }
+
+    return point_prime;
+}
+
+fn point_normalize_perspective(p: Point, width: f64, height: f64) -> Point {
+    let point_normalized = Point {
+        x: (p.x / p.w + 1.0) * 0.5 * width,
+        y: (p.y / p.w + 1.0) * 0.5 * height,
+        z: p.z / p.w,
+        w: 1.0
+    };
+
+    return point_normalized;
+}
+
+fn project_point(p: Point, width: f64, height: f64, perspective_matrix: [[f64; 4]; 4]) -> Point {
+    return point_normalize_perspective(matrix_mul(p, perspective_matrix), width, height);
 }
 
 fn send_ray(x: i32, y: i32, z: i32, theta: f64, objects: &std::vec::Vec<std::vec::Vec<i32>>) -> i32 {

@@ -43,15 +43,26 @@ print("weak")
 objects = []
 view = []
 #               x, y, z
-objects.append((4, 4, 2))
-objects.append((4, 2, 2))
-objects.append((2, 2, 2))
-objects.append((2, 4, 2))
+# objects.append((4, 4, 2))
+# objects.append((4, 2, 2))
+# objects.append((2, 2, 2))
+# objects.append((2, 4, 2))
 
-objects.append((4, 4, 4))
-objects.append((4, 2, 4))
-objects.append((2, 2, 4))
-objects.append((2, 4, 4))
+# objects.append((4, 4, 4))
+# objects.append((4, 2, 4))
+# objects.append((2, 2, 4))
+# objects.append((2, 4, 4))
+
+
+objects.append((5, 5, 1))
+objects.append((5, -4, 1))
+objects.append((-4, -4, 1))
+objects.append((-4, 5, 1))
+
+objects.append((5, 5, 5))
+objects.append((5, -4, 5))
+objects.append((-4, -4, 5))
+objects.append((-4, 5, 5))
 
 camera = (0, 0, 0)
 Bz = 15
