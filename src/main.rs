@@ -6,8 +6,6 @@ const W_SIZE: i32 = 8;
 fn main() {
     println!("Hello, world!");
 
-    let mut objects: Vec<Vec<i32>> = Vec::new();
-
     let mut x: i32 = 0;
     let mut y: i32 = 0;
     let mut z: i32 = 0;
@@ -15,24 +13,23 @@ fn main() {
     let mut phi: i32 = 0;
     let fov: i32 = 90;
     
-    objects.push(vec![5, 5, 5]);
-    
     initscr();
     
     let mut max_x = 0;
     let mut max_y = 0;
     getmaxyx(stdscr(), &mut max_y, &mut max_x);
 
-    let mut perspective: Vec<Vec<i32>> = vec![vec![Default::default(); max_x as usize]; max_y as usize];
-
+    let mut points: Vec<Point> = Vec::new();
     let projection_matrix = create_projection_matrix(max_y as f64 / max_x as f64, 90.0, 0.1, 1000.0);
-    let some_point = Point {
-        x: 5.0, y: 5.0, z: 1.0, w: 1.0
-    };
 
-    let pn = project_point(some_point, max_x as f64, max_y as f64, projection_matrix);
-
-    println!("{}", pn);
+    points.push(Point { x: 5.0, y: 5.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: 5.0, y: -4.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: -4.0, y: -4.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: -4.0, y: 5.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: 5.0, y: 5.0, z: 5.0, w: 1.0 });
+    points.push(Point { x: 5.0, y: -4.0, z: 5.0, w: 1.0 });
+    points.push(Point { x: -4.0, y: -4.0, z: 5.0, w: 1.0 });
+    points.push(Point { x: -4.0, y: 5.0, z: 5.0, w: 1.0 });
 
     loop {
         let input = getch();
@@ -65,14 +62,20 @@ fn main() {
             phi = phi.rem_euclid(360);
         }
 
-        let ray_step: f64 = fov as f64 / max_x as f64;
-        for screen_y in 0..max_y {
-            let mut ray_angle: f64 = (theta as f64 - fov as f64 / 2.0).rem_euclid(360.0);
-            for screen_x in 0..max_x {
-                ray_angle+=ray_step;
-                perspective[screen_y as usize][screen_x as usize] = send_ray(x, y, z, ray_angle, &objects);
-                if perspective[screen_y as usize][screen_x as usize] == 1 {
-                    mvprintw(screen_y, screen_x, &perspective[screen_y as usize][screen_x as usize].to_string());
+        for point in points.iter() {
+            let pn = project_point(*point, max_x as f64, max_y as f64, projection_matrix);
+            let pr = Point {
+                x: pn.x,
+                y: pn.y,
+                z: pn.z,
+                w: pn.w
+            };
+
+            for screen_y in 0..max_y {
+                for screen_x in 0..max_x {
+                    if screen_x == pr.x.floor() as i32 && screen_y == pr.y.floor() as i32 {
+                        mvprintw(screen_y, screen_x, "x");
+                    }
                 }
             }
         }
@@ -84,10 +87,6 @@ fn main() {
         mvprintw(4, 0, &("theta: ".to_owned()+&theta.to_string()));
         mvprintw(5, 0, &("phi: ".to_owned()+&phi.to_string()));
         mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
-
-        let distance = f64::sqrt((i32::pow(5 - x, 2) + i32::pow(5 - y, 2) + i32::pow(5 - z, 2)) as f64);
-
-        mvprintw(7, 0, &("d: ".to_owned()+&distance.to_string()));
 
         refresh();
     }
@@ -126,6 +125,14 @@ impl fmt::Display for Point {
     }
 }
 
+impl Clone for Point {
+    fn clone(&self) -> Point {
+        *self
+    }
+}
+
+impl Copy for Point { }
+
 fn matrix_mul(p: Point, mat: [[f64; 4]; 4]) -> Point {
     let point_prime = Point { // this needs +3 to z
         x: p.x * mat[0][0] + p.y * mat[1][0] + (p.z+3.0) * mat[2][0] + p.w * mat[3][0], 
@@ -158,45 +165,4 @@ fn point_normalize_perspective(p: Point, width: f64, height: f64) -> Point {
 
 fn project_point(p: Point, width: f64, height: f64, perspective_matrix: [[f64; 4]; 4]) -> Point {
     return point_normalize_perspective(matrix_mul(p, perspective_matrix), width, height);
-}
-
-fn send_ray(x: i32, y: i32, z: i32, theta: f64, objects: &std::vec::Vec<std::vec::Vec<i32>>) -> i32 {
-    let mut x_vec = theta.cos();
-    let mut y_vec = theta.sin();
-
-    let mut x_prime = x as f64 + x_vec;
-    let mut y_prime = y as f64 + y_vec;
-
-    while x_prime <= W_SIZE as f64 && x_prime >= 0.0 && y_prime <= W_SIZE as f64 && y_prime >= 0.0 {
-        // mvprintw(0, 0, &("Loading: ".to_owned()+&x_prime.to_string()));
-        // refresh();
-
-        x_vec = theta.cos();
-        y_vec = theta.sin();
-    
-        x_prime += x_vec;
-        y_prime += y_vec;
-    
-        for object in objects {
-            if is_passing_through(x_prime, y_prime, &object) {
-                return 1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-fn is_passing_through(x: f64, y: f64, object: &std::vec::Vec<i32>) -> bool {
-    if y >= object[0] as f64 && y <= object[0] as f64 + 1.0 {
-        if x >= object[1] as f64 && x <= object[1] as f64 + 1.0 {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-fn is_touching_or_worse(a: std::vec::Vec<i32>, b: std::vec::Vec<i32>) -> bool {
-    return false;
 }
