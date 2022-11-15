@@ -12,6 +12,7 @@ fn main() {
     let mut theta: i32 = 0;
     let mut phi: i32 = 0;
     let fov: i32 = 90;
+    let mut count = 0.0;
     
     initscr();
     
@@ -22,14 +23,23 @@ fn main() {
     let mut points: Vec<Point> = Vec::new();
     let projection_matrix = create_projection_matrix(max_y as f64 / max_x as f64, 90.0, 0.1, 1000.0);
 
-    points.push(Point { x: 5.0, y: 5.0, z: 1.0, w: 1.0 });
-    points.push(Point { x: 5.0, y: -4.0, z: 1.0, w: 1.0 });
-    points.push(Point { x: -4.0, y: -4.0, z: 1.0, w: 1.0 });
-    points.push(Point { x: -4.0, y: 5.0, z: 1.0, w: 1.0 });
-    points.push(Point { x: 5.0, y: 5.0, z: 5.0, w: 1.0 });
-    points.push(Point { x: 5.0, y: -4.0, z: 5.0, w: 1.0 });
-    points.push(Point { x: -4.0, y: -4.0, z: 5.0, w: 1.0 });
-    points.push(Point { x: -4.0, y: 5.0, z: 5.0, w: 1.0 });
+    points.push(Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 });
+    points.push(Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 });
+    points.push(Point { x: 1.0, y: 1.0, z: 0.0, w: 1.0 });
+    points.push(Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 });
+    points.push(Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: 0.0, y: 1.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 });
+    points.push(Point { x: 1.0, y: 0.0, z: 1.0, w: 1.0 });
+
+    // points.push(Point { x: 5.0, y: 5.0, z: 5.0, w: 1.0 });
+    // points.push(Point { x: 5.0, y: 10.0, z: 5.0, w: 1.0 });
+    // points.push(Point { x: 10.0, y: 10.0, z: 5.0, w: 1.0 });
+    // points.push(Point { x: 10.0, y: 5.0, z: 5.0, w: 1.0 });
+    // points.push(Point { x: 5.0, y: 5.0, z: 10.0, w: 1.0 });
+    // points.push(Point { x: 5.0, y: 10.0, z: 10.0, w: 1.0 });
+    // points.push(Point { x: 10.0, y: 10.0, z: 10.0, w: 1.0 });
+    // points.push(Point { x: 10.0, y: 5.0, z: 10.0, w: 1.0 });
 
     loop {
         let input = getch();
@@ -62,18 +72,18 @@ fn main() {
             phi = phi.rem_euclid(360);
         }
 
+        count += 10.0;
+
         for point in points.iter() {
-            let pn = project_point(*point, max_x as f64, max_y as f64, projection_matrix);
-            let pr = Point {
-                x: pn.x,
-                y: pn.y,
-                z: pn.z,
-                w: pn.w
-            };
+            let mut pr = point_rot_z(*point, count);
+            pr = point_rot_x(pr, count * 0.5);
+            pr = point_rot_y(pr, 0.0);
+
+            let pn = project_point(pr, max_x as f64, max_y as f64, projection_matrix);
 
             for screen_y in 0..max_y {
                 for screen_x in 0..max_x {
-                    if screen_x == pr.x.floor() as i32 && screen_y == pr.y.floor() as i32 {
+                    if screen_x == pn.x.floor() as i32 && screen_y == pn.y.floor() as i32 {
                         mvprintw(screen_y, screen_x, "x");
                     }
                 }
@@ -87,6 +97,7 @@ fn main() {
         mvprintw(4, 0, &("theta: ".to_owned()+&theta.to_string()));
         mvprintw(5, 0, &("phi: ".to_owned()+&phi.to_string()));
         mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
+        mvprintw(6, 0, &("count: ".to_owned()+&count.to_string()));
 
         refresh();
     }
@@ -95,7 +106,7 @@ fn main() {
 fn create_projection_matrix(a: f64, fov: f64, znear: f64, zfar: f64) -> [[f64; 4]; 4] {
     let mut proj_mat = [[0.0f64; 4]; 4];
 
-    let f = 1.0 / (fov / 2.0).tan();
+    let f = 1.0 / (fov / 2.0).to_radians().tan(); // without radians it spirals the cam
     let scale = zfar / (zfar - znear);
 
     proj_mat[0][0] = a*f;
@@ -165,4 +176,46 @@ fn point_normalize_perspective(p: Point, width: f64, height: f64) -> Point {
 
 fn project_point(p: Point, width: f64, height: f64, perspective_matrix: [[f64; 4]; 4]) -> Point {
     return point_normalize_perspective(matrix_mul(p, perspective_matrix), width, height);
+}
+
+fn point_rot_z(p: Point, theta: f64) -> Point {
+    let c = theta.to_radians().cos();
+    let s = theta.to_radians().sin();
+
+    let point_rot_z = Point {
+        x: p.x * c - p.y * s + p.z * 0.0 + p.w * 0.0,
+        y: p.x * s + p.y * c + p.z * 0.0 + p.w * 0.0,
+        z: p.x * 0.0 + p.y * 0.0 + p.z * 1.0 + p.w * 0.0,
+        w: p.x * 0.0 + p.y * 0.0 + p.z * 0.0 + p.w * 1.0
+    };
+
+    return point_rot_z;
+}
+
+fn point_rot_x(p: Point, theta: f64) -> Point {
+    let c = theta.to_radians().cos();
+    let s = theta.to_radians().sin();
+
+    let point_rot_x = Point {
+        x: p.x * 1.0 + p.y * 0.0 + p.z * 0.0 + p.w * 0.0,
+        y: p.x * 0.0 + p.y * c - p.z * s + p.w * 0.0,
+        z: p.x * 0.0 + p.y * s + p.z * c + p.w * 0.0,
+        w: p.x * 0.0 + p.y * 0.0 + p.z * 0.0 + p.w * 1.0,
+    };
+
+    return point_rot_x;
+}
+
+fn point_rot_y(p: Point, theta: f64) -> Point {
+    let c = theta.to_radians().cos();
+    let s = theta.to_radians().sin();
+
+    let point_rot_y = Point {
+        x: p.x * c + p.y * 0.0 + p.z * s + p.w * 0.0,
+        y: p.x * 0.0 + p.y * 1.0 + p.z * 0.0 + p.w * 0.0,
+        z: p.x * -s + p.y * 0.0 + p.z * c + p.w * 0.0,
+        w: p.x * 0.0 + p.y * 0.0 + p.z * 0.0 + p.w * 1.0,
+    };
+
+    return point_rot_y;
 }
