@@ -54,6 +54,9 @@ view = []
 # objects.append((2, 4, 4))
 
 
+objects.append((1, 3, 1))
+objects.append((0, 5, 5))
+
 objects.append((5, 5, 1))
 objects.append((5, -4, 1))
 objects.append((-4, -4, 1))
