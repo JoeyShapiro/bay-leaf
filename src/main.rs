@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use ncurses::*;
 
 use crate::player::Player;
@@ -8,15 +10,28 @@ pub mod key_listener;
 pub mod player;
 
 const W_SIZE: i32 = 8;
+const MILLIS_PER_TICK: u128 = 10; // 1000 ~= 1sec; note for future me
+
+/* CAMERA MOVEMENT REFERENCE
+  -y    z
+   |   /
+   |  /
+   | /
+   |/
+   +---------- x
+*/
 
 fn main() { 
     println!("Hello, world!");
     
     let fov: i32 = 90;
-    let mut count = 0.0;
+    let mut tick = 0.0;
     
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+
+    let clock = Instant::now();
+    let mut then = clock.elapsed().as_millis();
     
     let mut max_x = 0;
     let mut max_y = 0;
@@ -81,17 +96,25 @@ fn main() {
     // draw_line(tn.a, tn.c);
 
     loop {
+        let now = clock.elapsed().as_millis();
+
+        if !is_next_tick(now, then) {
+            continue;
+        }
+
+        then = now;
+
         clear();
 
         player = key_listener::listen(&mut my_key_listener, player);
 
         // basic movement
-        my_key_listener.when_pressing_forward = |mut player| { player.position.x += 1.0; player };
-        my_key_listener.when_pressing_backward = |mut player| { player.position.x -= 1.0; player };
-        my_key_listener.when_pressing_left = |mut player| { player.position.y -= 1.0; player };
-        my_key_listener.when_pressing_right = |mut player| { player.position.y += 1.0; player };
-        my_key_listener.when_pressing_up = |mut player| { player.position.z += 1.0; player };
-        my_key_listener.when_pressing_down = |mut player| { player.position.z -= 1.0; player };
+        my_key_listener.when_pressing_forward = |mut player| { player.position.z += 1.0; player };
+        my_key_listener.when_pressing_backward = |mut player| { player.position.z -= 1.0; player };
+        my_key_listener.when_pressing_left = |mut player| { player.position.x -= 1.0; player };
+        my_key_listener.when_pressing_right = |mut player| { player.position.x += 1.0; player };
+        my_key_listener.when_pressing_up = |mut player| { player.position.y -= 1.0; player };
+        my_key_listener.when_pressing_down = |mut player| { player.position.y += 1.0; player };
 
         // basic turning
         my_key_listener.when_pressing_turn_up = |mut player| { player.phi += 1.0; player.phi %= 360.0; player };
@@ -126,35 +149,22 @@ fn main() {
         // }
 
         for triangle in triangles.iter() {
-            let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
+            let tc = triangle::triangle_world_to_camera_space(player.position, *triangle);
+            let tr = triangle::triangle_rot(tc, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
             let tn = triangle::triangle_project(tr, max_x as f64, max_y as f64, projection_matrix);
 
             triangle::draw_triangle(tn);
-            // for screen_y in 0..max_y {
-            //     for screen_x in 0..max_x {
-            //         if screen_x == tn.a.x.floor() as i32 && screen_y == tn.a.y.floor() as i32 {
-            //             mvprintw(screen_y, screen_x, "x");
-            //         }
-            //         if screen_x == tn.b.x.floor() as i32 && screen_y == tn.b.y.floor() as i32 {
-            //             mvprintw(screen_y, screen_x, "x");
-            //         }
-            //         if screen_x == tn.c.x.floor() as i32 && screen_y == tn.c.y.floor() as i32 {
-            //             mvprintw(screen_y, screen_x, "x");
-            //         }
-            //     }
-            // }
         }
 
-        count += 1.0;
+        tick += 1.0;
 
-        // mvprintw(0, 0, &("input: ".to_owned()+&input.to_string()));
         mvprintw(1, 0, &("x: ".to_owned()+&player.position.x.to_string()));
         mvprintw(2, 0, &("y: ".to_owned()+&player.position.y.to_string()));
         mvprintw(3, 0, &("z: ".to_owned()+&player.position.z.to_string()));
         mvprintw(4, 0, &("theta: ".to_owned()+&player.theta.to_string()));
         mvprintw(5, 0, &("phi: ".to_owned()+&player.phi.to_string()));
         mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
-        mvprintw(7, 0, &("count: ".to_owned()+&count.to_string()));
+        mvprintw(7, 0, &("tick: ".to_owned()+&tick.to_string()));
 
         refresh();
     }
@@ -207,4 +217,8 @@ fn draw_line(p1: point::Point, p2: point::Point) {
             mvprintw(y as i32, x, "x");
         }
     }
+}
+
+fn is_next_tick(now: u128, then: u128) -> bool {
+    return now - then >= MILLIS_PER_TICK;
 }

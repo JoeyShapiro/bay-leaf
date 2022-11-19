@@ -53,3 +53,12 @@ pub fn triangle_rot(tri: Triangle, theta_x: f64, theta_y: f64, theta_z: f64) -> 
 
     return tri_rot;
 }
+
+// converts triangle to player space
+pub fn triangle_world_to_camera_space(camera: point::Point, triangle: Triangle) -> Triangle {
+    return Triangle {
+        a: point::point_to_camera_space(triangle.a, camera),
+        b: point::point_to_camera_space(triangle.b, camera),
+        c: point::point_to_camera_space(triangle.b, camera),
+    }
+}

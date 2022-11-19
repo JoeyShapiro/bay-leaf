@@ -97,3 +97,9 @@ pub fn point_rot_y(p: Point, theta: f64) -> Point {
 
     return point_rot_y;
 }
+
+// converts world space to player space
+// putting space_to_player is confusing
+pub fn point_to_camera_space(p: Point, camera: Point) -> Point {
+    return Point { x: p.x - camera.x, y: p.y - camera.y, z: p.z - camera.z, w: 1.0 }
+}
