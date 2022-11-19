@@ -50,15 +50,6 @@ fn main() {
     let g = point::Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
     let h = point::Point { x: 1.0, y: 0.0, z: 1.0, w: 1.0 };
 
-    // let a = Point { x: 1.0, y: 3.0, z: 1.0, w: 1.0 };
-    // let b = Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
-    // let c = Point { x: 3.0, y: 1.0, z: 1.0, w: 1.0 };
-    // let d = Point { x: 3.0, y: 3.0, z: 1.0, w: 1.0 };
-    // let e = Point { x: 1.0, y: 1.0, z: 3.0, w: 1.0 };
-    // let f = Point { x: 1.0, y: 3.0, z: 3.0, w: 1.0 };
-    // let g = Point { x: 3.0, y: 3.0, z: 3.0, w: 1.0 };
-    // let h = Point { x: 3.0, y: 1.0, z: 3.0, w: 1.0 };
-
     // south
     triangles.push(triangle::Triangle { a: a, b: b, c: c });
     triangles.push(triangle::Triangle { a: a, b: d, c: c });
@@ -77,23 +68,6 @@ fn main() {
     // bottom
     triangles.push(triangle::Triangle { a: h, b: d, c: b });
     triangles.push(triangle::Triangle { a: h, b: e, c: b });
-
-    // points.push(Point { x: 5.0, y: 5.0, z: 5.0, w: 1.0 });
-    // points.push(Point { x: 5.0, y: 11-3.0, z: 5.0, w: 1.0 });
-    // points.push(Point { x: 10.0, y: 10.0, z: 5.0, w: 1.0 });
-    // points.push(Point { x: 10.0, y: 5.0, z: 5.0, w: 1.0 });
-    // points.push(Point { x: 5.0, y: 5.0, z: 10.0, w: 1.0 });
-    // points.push(Point { x: 5.0, y: 10.0, z: 10.0, w: 1.0 });
-    // points.push(Point { x: 10.0, y: 10.0, z: 10.0, w: 1.0 });
-    // points.push(Point { x: 10.0, y: 5.0, z: 10.0, w: 1.0 });
-
-    // for triangle in triangles.iter() {
-    //     let tr = triangle_rot(*triangle, 0.0, 0.0, 0.0);
-    //     let tn = triangle_project(tr, max_x as f64, max_y as f64, projection_matrix);
-    //     draw_triangle(tn);
-    // }
-
-    // draw_line(tn.a, tn.c);
 
     loop {
         let now = clock.elapsed().as_millis();
@@ -149,9 +123,9 @@ fn main() {
         // }
 
         for triangle in triangles.iter() {
-            let tc = triangle::triangle_world_to_camera_space(player.position, *triangle);
-            let tr = triangle::triangle_rot(tc, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
-            let tn = triangle::triangle_project(tr, max_x as f64, max_y as f64, projection_matrix);
+            let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
+            let tc = triangle::triangle_world_to_camera_space(player.position, tr); // apparently this goes AFTER rotation
+            let tn = triangle::triangle_project(tc, max_x as f64, max_y as f64, projection_matrix);
 
             triangle::draw_triangle(tn);
         }
@@ -187,23 +161,12 @@ fn create_projection_matrix(a: f64, fov: f64, znear: f64, zfar: f64) -> [[f64; 4
 
 // this seems inefficient
 fn draw_line(p1: point::Point, p2: point::Point) {
-    // let m = (p2.y - p1.y) / (p2.x - p1.x);
-    // for i in 0..height {
-    //     for j in 0..width {
-    //         if j as f64 == m*i as f64 {
-    //             mvprintw(i, j, "x");
-    //         }
-    //     }
-    // }
-
     let dx = p2.x - p1.x;
     let dy = p2.y - p1.y;
     
     let min_x = if p1.x < p2.x { p1.x } else { p2.x }.floor() as i32;
     let max_x = if p1.x < p2.x { p2.x } else { p1.x }.ceil() as i32;
     
-    // println!("p1: {}; p2: {}", p1, p2);
-    // println!("dx: {}, dy: {}", dx, dy);
     if min_x == max_x { // if inifite slope
         let min_y = if p1.y < p2.y { p1.y } else { p2.y }.floor() as i32;
         let max_y = if p1.y < p2.y { p2.y } else { p1.y }.ceil() as i32;
