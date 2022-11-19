@@ -1,5 +1,7 @@
 use crate::point::Point;
 
 pub struct Player {
-    position: Point
+    pub position: Point,
+    pub theta: f64,
+    pub phi: f64
 }

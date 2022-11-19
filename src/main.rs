@@ -1,6 +1,6 @@
-use std::rc::Rc;
-
 use ncurses::*;
+
+use crate::player::Player;
 
 pub mod point;
 pub mod triangle;
@@ -11,12 +11,7 @@ const W_SIZE: i32 = 8;
 
 fn main() { 
     println!("Hello, world!");
-
-    let mut x: i32 = 0;
-    let mut y: i32 = 0;
-    let mut z: i32 = 0;
-    let mut theta: i32 = 0;
-    let mut phi: i32 = 0;
+    
     let fov: i32 = 90;
     let mut count = 0.0;
     
@@ -29,6 +24,7 @@ fn main() {
     let projection_matrix = create_projection_matrix(max_y as f64 / max_x as f64, 90.0, 0.1, 1000.0);
     let mut triangles: Vec<triangle::Triangle> = Vec::new();
     let mut my_key_listener = key_listener::KeyListener::new();
+    let mut player: Player = Player { position: point::Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }, theta: 0.0, phi: 0.0 };
 
     let a = point::Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
     let b = point::Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
@@ -85,25 +81,23 @@ fn main() {
     // draw_line(tn.a, tn.c);
 
     loop {
-        
-        let input = getch();
         clear();
 
-        key_listener::listen(&mut my_key_listener);
+        player = key_listener::listen(&mut my_key_listener, player);
 
         // basic movement
-        my_key_listener.when_pressing_forward = Box::new(|| { x += 1 });
-        my_key_listener.when_pressing_backward = Box::new(|| { x -= 1 });
-        my_key_listener.when_pressing_left = Box::new(|| { y -= 1 });
-        my_key_listener.when_pressing_right = Box::new(|| { y += 1 });
-        my_key_listener.when_pressing_up = Box::new(|| { z += 1 });
-        my_key_listener.when_pressing_down = Box::new(|| { z -= 1 });
+        my_key_listener.when_pressing_forward = |mut player| { player.position.x += 1.0; player };
+        my_key_listener.when_pressing_backward = |mut player| { player.position.x -= 1.0; player };
+        my_key_listener.when_pressing_left = |mut player| { player.position.y -= 1.0; player };
+        my_key_listener.when_pressing_right = |mut player| { player.position.y += 1.0; player };
+        my_key_listener.when_pressing_up = |mut player| { player.position.z += 1.0; player };
+        my_key_listener.when_pressing_down = |mut player| { player.position.z -= 1.0; player };
 
         // basic turning
-        my_key_listener.when_pressing_turn_up = Box::new(|| { theta += 90; theta %= 360 });
-        my_key_listener.when_pressing_turn_down = Box::new(|| { theta -= 90; theta = theta.rem_euclid(360) }); // % is actually rem. for neg, this has a different result
-        my_key_listener.when_pressing_turn_right = Box::new(|| { phi += 90; phi %= 360 });
-        my_key_listener.when_pressing_turn_left = Box::new(|| { phi -= 90; phi = phi.rem_euclid(360) });
+        my_key_listener.when_pressing_turn_up = |mut player| { player.phi += 1.0; player.phi %= 360.0; player };
+        my_key_listener.when_pressing_turn_down = |mut player| { player.phi -= 1.0; player.phi = player.phi.rem_euclid(360.0); player }; // % is actually rem. for neg, this has a different result
+        my_key_listener.when_pressing_turn_right = |mut player| { player.theta += 1.0; player.theta %= 360.0; player };
+        my_key_listener.when_pressing_turn_left = |mut player| { player.theta -= 1.0; player.theta = player.theta.rem_euclid(360.0); player };
 
         // if input == 119 && x < W_SIZE-1 { // 
         //     x+=1;
@@ -132,7 +126,7 @@ fn main() {
         // }
 
         for triangle in triangles.iter() {
-            let tr = triangle::triangle_rot(*triangle, count*0.5, 0.0, count); // count*0.5, 0.0, count
+            let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
             let tn = triangle::triangle_project(tr, max_x as f64, max_y as f64, projection_matrix);
 
             triangle::draw_triangle(tn);
@@ -151,16 +145,17 @@ fn main() {
             // }
         }
 
-        mvprintw(0, 0, &("input: ".to_owned()+&input.to_string()));
-        // mvprintw(1, 0, &("x: ".to_owned()+&x.to_string()));
-        mvprintw(2, 0, &("y: ".to_owned()+&y.to_string()));
-        mvprintw(3, 0, &("z: ".to_owned()+&z.to_string()));
-        mvprintw(4, 0, &("theta: ".to_owned()+&theta.to_string()));
-        mvprintw(5, 0, &("phi: ".to_owned()+&phi.to_string()));
-        mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
-        mvprintw(6, 0, &("count: ".to_owned()+&count.to_string()));
+        count += 1.0;
 
-        count += 10.0;
+        // mvprintw(0, 0, &("input: ".to_owned()+&input.to_string()));
+        mvprintw(1, 0, &("x: ".to_owned()+&player.position.x.to_string()));
+        mvprintw(2, 0, &("y: ".to_owned()+&player.position.y.to_string()));
+        mvprintw(3, 0, &("z: ".to_owned()+&player.position.z.to_string()));
+        mvprintw(4, 0, &("theta: ".to_owned()+&player.theta.to_string()));
+        mvprintw(5, 0, &("phi: ".to_owned()+&player.phi.to_string()));
+        mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
+        mvprintw(7, 0, &("count: ".to_owned()+&count.to_string()));
+
         refresh();
     }
 }

@@ -9,7 +9,7 @@ use ncurses::mvprintw;
 use crate::player::Player;
 
 // #[derive(Clone)]
-pub struct KeyListener<'a> {
+pub struct KeyListener {
     pub device_state: DeviceState,
     pub should_stop: bool,
 
@@ -50,30 +50,30 @@ pub struct KeyListener<'a> {
     pub was_holding_turn_down: bool,
 
     // functions
-    pub when_pressing_forward: Box<dyn FnMut() + 'a>,
-    pub when_released_forward: Box<dyn FnMut() + 'a>,
-    pub when_pressing_backward: Box<dyn FnMut() + 'a>,
-    pub when_released_backward: Box<dyn FnMut() + 'a>,
-    pub when_pressing_left: Box<dyn FnMut() + 'a>,
-    pub when_released_left: Box<dyn FnMut() + 'a>,
-    pub when_pressing_right: Box<dyn FnMut() + 'a>,
-    pub when_released_right: Box<dyn FnMut() + 'a>,
-    pub when_pressing_up: Box<dyn FnMut() + 'a>,
-    pub when_released_up: Box<dyn FnMut() + 'a>,
-    pub when_pressing_down: Box<dyn FnMut() + 'a>,
-    pub when_released_down: Box<dyn FnMut() + 'a>,
-    pub when_pressing_turn_left: Box<dyn FnMut() + 'a>,
-    pub when_released_turn_left: Box<dyn FnMut() + 'a>,
-    pub when_pressing_turn_right: Box<dyn FnMut() + 'a>,
-    pub when_released_turn_right: Box<dyn FnMut() + 'a>,
-    pub when_pressing_turn_up: Box<dyn FnMut() + 'a>,
-    pub when_released_turn_up: Box<dyn FnMut() + 'a>,
-    pub when_pressing_turn_down: Box<dyn FnMut() + 'a>,
-    pub when_released_turn_down: Box<dyn FnMut() + 'a>
+    pub when_pressing_forward: fn(player: Player) -> Player,
+    pub when_released_forward: fn(player: Player) -> Player,
+    pub when_pressing_backward: fn(player: Player) -> Player,
+    pub when_released_backward: fn(player: Player) -> Player,
+    pub when_pressing_left: fn(player: Player) -> Player,
+    pub when_released_left: fn(player: Player) -> Player,
+    pub when_pressing_right: fn(player: Player) -> Player,
+    pub when_released_right: fn(player: Player) -> Player,
+    pub when_pressing_up: fn(player: Player) -> Player,
+    pub when_released_up: fn(player: Player) -> Player,
+    pub when_pressing_down: fn(player: Player) -> Player,
+    pub when_released_down: fn(player: Player) -> Player,
+    pub when_pressing_turn_left: fn(player: Player) -> Player,
+    pub when_released_turn_left: fn(player: Player) -> Player,
+    pub when_pressing_turn_right: fn(player: Player) -> Player,
+    pub when_released_turn_right: fn(player: Player) -> Player,
+    pub when_pressing_turn_up: fn(player: Player) -> Player,
+    pub when_released_turn_up: fn(player: Player) -> Player,
+    pub when_pressing_turn_down: fn(player: Player) -> Player,
+    pub when_released_turn_down: fn(player: Player) -> Player
 }
 
-impl<'a> KeyListener<'a> {
-    pub fn new() -> KeyListener<'a>{
+impl KeyListener {
+    pub fn new() -> KeyListener{
         return KeyListener { ..Default::default() };
     }
 
@@ -83,10 +83,8 @@ impl<'a> KeyListener<'a> {
     }
 }
 
-impl<'a> Default for KeyListener<'a> {
+impl Default for KeyListener {
     fn default() -> Self {
-        let spectre = || {};
-
         return KeyListener {
             device_state: DeviceState::new(),
 
@@ -125,33 +123,33 @@ impl<'a> Default for KeyListener<'a> {
             was_holding_turn_down: false,
 
             should_stop: false,
-            when_pressing_forward: Box::new(spectre),
-            when_released_forward: Box::new(spectre),
-            when_pressing_backward: Box::new(spectre),
-            when_released_backward: Box::new(spectre),
-            when_pressing_left: Box::new(spectre),
-            when_released_left: Box::new(spectre),
-            when_pressing_right: Box::new(spectre),
-            when_released_right: Box::new(spectre),
-            when_pressing_up: Box::new(spectre),
-            when_released_up: Box::new(spectre),
-            when_pressing_down: Box::new(spectre),
-            when_released_down: Box::new(spectre),
-            when_pressing_turn_left: Box::new(spectre),
-            when_released_turn_left: Box::new(spectre),
-            when_pressing_turn_right: Box::new(spectre),
-            when_released_turn_right: Box::new(spectre),
-            when_pressing_turn_up: Box::new(spectre),
-            when_released_turn_up: Box::new(spectre),
-            when_pressing_turn_down: Box::new(spectre),
-            when_released_turn_down: Box::new(spectre)
+            when_pressing_forward: |player| { player },
+            when_released_forward: |player| { player },
+            when_pressing_backward: |player| { player },
+            when_released_backward: |player| { player },
+            when_pressing_left: |player| { player },
+            when_released_left: |player| { player },
+            when_pressing_right: |player| { player },
+            when_released_right: |player| { player },
+            when_pressing_up: |player| { player },
+            when_released_up: |player| { player },
+            when_pressing_down: |player| { player },
+            when_released_down: |player| { player },
+            when_pressing_turn_left: |player| { player },
+            when_released_turn_left: |player| { player },
+            when_pressing_turn_right: |player| { player },
+            when_released_turn_right: |player| { player },
+            when_pressing_turn_up: |player| { player },
+            when_released_turn_up: |player| { player },
+            when_pressing_turn_down: |player| { player },
+            when_released_turn_down: |player| { player }
         };
     }
 }
 
-pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
+pub fn listen(key_listener: &mut KeyListener, mut player: Player) -> Player {
     if key_listener.should_stop {
-        return;
+        return player;
     }
 
     let keys: Vec<Keycode> = key_listener.device_state.get_keys(); // how does this work ???
@@ -169,7 +167,7 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
                 key if key == key_listener.turn_up => key_listener.is_holding_turn_up = true,
                 key if key == key_listener.turn_down => key_listener.is_holding_turn_down = true,
 
-                _ => _ = mvprintw(i as i32+1, 0, &("key: ".to_owned()+&key.to_string()))
+                _ => _ = mvprintw(i as i32+8, 0, &("key: ".to_owned()+&key.to_string()))
             }
         }
     }
@@ -177,11 +175,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // forward
     if key_listener.is_holding_forward {
         mvprintw(0, 0, &("Holding forward".to_owned()));
-        (key_listener.when_pressing_forward)();
+        player = (key_listener.when_pressing_forward)(player);
         key_listener.was_holding_forward = true;
         key_listener.is_holding_forward = false;
     } else if key_listener.was_holding_forward && !key_listener.is_holding_forward { // when the user releases forward
-        (key_listener.when_released_forward)();
+        player = (key_listener.when_released_forward)(player);
         key_listener.was_holding_forward = false;
         mvprintw(0, 0, &("Released forward".to_owned()));
     }
@@ -189,11 +187,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // backward
     if key_listener.is_holding_backward {
         mvprintw(0, 0, &("Holding backward".to_owned()));
-        (key_listener.when_pressing_backward)();
+        player = (key_listener.when_pressing_backward)(player);
         key_listener.was_holding_backward = true;
         key_listener.is_holding_backward = false;
     } else if key_listener.was_holding_backward && !key_listener.is_holding_backward { // when the user releases backward
-        (key_listener.when_released_backward)();
+        player = (key_listener.when_released_backward)(player);
         key_listener.was_holding_backward = false;
         mvprintw(0, 0, &("Released backward".to_owned()));
     }
@@ -201,11 +199,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // left
     if key_listener.is_holding_left {
         mvprintw(0, 0, &("Holding left".to_owned()));
-        (key_listener.when_pressing_left)();
+        player = (key_listener.when_pressing_left)(player);
         key_listener.was_holding_left = true;
         key_listener.is_holding_left = false;
     } else if key_listener.was_holding_left && !key_listener.is_holding_left { // when the user releases left
-        (key_listener.when_released_left)();
+        player = (key_listener.when_released_left)(player);
         key_listener.was_holding_left = false;
         mvprintw(0, 0, &("Released left".to_owned()));
     }
@@ -213,11 +211,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // right
     if key_listener.is_holding_right {
         mvprintw(0, 0, &("Holding right".to_owned()));
-        (key_listener.when_pressing_right)();
+        player = (key_listener.when_pressing_right)(player);
         key_listener.was_holding_right = true;
         key_listener.is_holding_right = false;
     } else if key_listener.was_holding_right && !key_listener.is_holding_right { // when the user releases right
-        (key_listener.when_released_right)();
+        player = (key_listener.when_released_right)(player);
         key_listener.was_holding_right = false;
         mvprintw(0, 0, &("Released right".to_owned()));
     }
@@ -225,11 +223,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // up
     if key_listener.is_holding_up {
         mvprintw(0, 0, &("Holding up".to_owned()));
-        (key_listener.when_pressing_up)();
+        player = (key_listener.when_pressing_up)(player);
         key_listener.was_holding_up = true;
         key_listener.is_holding_up = false;
     } else if key_listener.was_holding_up && !key_listener.is_holding_up { // when the user releases up
-        (key_listener.when_released_up)();
+        player = (key_listener.when_released_up)(player);
         key_listener.was_holding_up = false;
         mvprintw(0, 0, &("Released up".to_owned()));
     }
@@ -237,11 +235,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // down
     if key_listener.is_holding_down {
         mvprintw(0, 0, &("Holding down".to_owned()));
-        (key_listener.when_pressing_down)();
+        player = (key_listener.when_pressing_down)(player);
         key_listener.was_holding_down = true;
         key_listener.is_holding_down = false;
     } else if key_listener.was_holding_down && !key_listener.is_holding_down { // when the user releases down
-        (key_listener.when_released_down)();
+        player = (key_listener.when_released_down)(player);
         key_listener.was_holding_down = false;
         mvprintw(0, 0, &("Released down".to_owned()));
     }
@@ -249,11 +247,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // turn_left
     if key_listener.is_holding_turn_left {
         mvprintw(0, 0, &("Holding turn_left".to_owned()));
-        (key_listener.when_pressing_turn_left)();
+        player = (key_listener.when_pressing_turn_left)(player);
         key_listener.was_holding_turn_left = true;
         key_listener.is_holding_turn_left = false;
     } else if key_listener.was_holding_turn_left && !key_listener.is_holding_turn_left { // when the user releases turn_left
-        (key_listener.when_released_turn_left)();
+        player = (key_listener.when_released_turn_left)(player);
         key_listener.was_holding_turn_left = false;
         mvprintw(0, 0, &("Released turn_left".to_owned()));
     }
@@ -261,11 +259,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // turn_right
     if key_listener.is_holding_turn_right {
         mvprintw(0, 0, &("Holding turn_right".to_owned()));
-        (key_listener.when_pressing_turn_right)();
+        player = (key_listener.when_pressing_turn_right)(player);
         key_listener.was_holding_turn_right = true;
         key_listener.is_holding_turn_right = false;
     } else if key_listener.was_holding_turn_right && !key_listener.is_holding_turn_right { // when the user releases turn_right
-        (key_listener.when_released_turn_right)();
+        player = (key_listener.when_released_turn_right)(player);
         key_listener.was_holding_turn_right = false;
         mvprintw(0, 0, &("Released turn_right".to_owned()));
     }
@@ -273,11 +271,11 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // turn_up
     if key_listener.is_holding_turn_up {
         mvprintw(0, 0, &("Holding turn_up".to_owned()));
-        (key_listener.when_pressing_turn_up)();
+        player = (key_listener.when_pressing_turn_up)(player);
         key_listener.was_holding_turn_up = true;
         key_listener.is_holding_turn_up = false;
     } else if key_listener.was_holding_turn_up && !key_listener.is_holding_turn_up { // when the user releases turn_up
-        (key_listener.when_released_turn_up)();
+        player = (key_listener.when_released_turn_up)(player);
         key_listener.was_holding_turn_up = false;
         mvprintw(0, 0, &("Released turn_up".to_owned()));
     }
@@ -285,12 +283,14 @@ pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     // turn_down
     if key_listener.is_holding_turn_down {
         mvprintw(0, 0, &("Holding turn_down".to_owned()));
-        (key_listener.when_pressing_turn_down)();
+        player = (key_listener.when_pressing_turn_down)(player);
         key_listener.was_holding_turn_down = true;
         key_listener.is_holding_turn_down = false;
     } else if key_listener.was_holding_turn_down && !key_listener.is_holding_turn_down { // when the user releases turn_down
-        (key_listener.when_released_turn_down)();
+        player = (key_listener.when_released_turn_down)(player);
         key_listener.was_holding_turn_down = false;
         mvprintw(0, 0, &("Released turn_down".to_owned()));
     }
+
+    return player;
 }
