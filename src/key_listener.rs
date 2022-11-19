@@ -4,9 +4,13 @@
     seems the best way
 */
 
-use ncurses::getch;
+use device_query::{DeviceQuery, DeviceState, Keycode}; // using this for now, for simplicity
+use ncurses::mvprintw;
+use crate::player::Player;
 
-pub struct KeyListener {
+// #[derive(Clone)]
+pub struct KeyListener<'a> {
+    pub device_state: DeviceState,
     pub should_stop: bool,
 
     // key constants
@@ -46,40 +50,46 @@ pub struct KeyListener {
     pub was_holding_turn_down: bool,
 
     // functions
-    pub when_pressing_space: fn() -> bool,
-    pub when_released_space: fn() -> bool,
-    pub when_pressing_forward: fn() -> bool,
-    pub when_released_forward: fn() -> bool,
-    pub when_pressing_backward: fn() -> bool,
-    pub when_released_backward: fn() -> bool,
-    pub when_pressing_left: fn() -> bool,
-    pub when_released_left: fn() -> bool,
-    pub when_pressing_right: fn() -> bool,
-    pub when_released_right: fn() -> bool,
-    pub when_pressing_up: fn() -> bool,
-    pub when_released_up: fn() -> bool,
-    pub when_pressing_down: fn() -> bool,
-    pub when_released_down: fn() -> bool,
-    pub when_pressing_turn_left: fn() -> bool,
-    pub when_released_turn_left: fn() -> bool,
-    pub when_pressing_turn_right: fn() -> bool,
-    pub when_released_turn_right: fn() -> bool,
-    pub when_pressing_turn_up: fn() -> bool,
-    pub when_released_turn_up: fn() -> bool,
-    pub when_pressing_turn_down: fn() -> bool,
-    pub when_released_turn_down: fn() -> bool
+    pub when_pressing_forward: Box<dyn FnMut() + 'a>,
+    pub when_released_forward: Box<dyn FnMut() + 'a>,
+    pub when_pressing_backward: Box<dyn FnMut() + 'a>,
+    pub when_released_backward: Box<dyn FnMut() + 'a>,
+    pub when_pressing_left: Box<dyn FnMut() + 'a>,
+    pub when_released_left: Box<dyn FnMut() + 'a>,
+    pub when_pressing_right: Box<dyn FnMut() + 'a>,
+    pub when_released_right: Box<dyn FnMut() + 'a>,
+    pub when_pressing_up: Box<dyn FnMut() + 'a>,
+    pub when_released_up: Box<dyn FnMut() + 'a>,
+    pub when_pressing_down: Box<dyn FnMut() + 'a>,
+    pub when_released_down: Box<dyn FnMut() + 'a>,
+    pub when_pressing_turn_left: Box<dyn FnMut() + 'a>,
+    pub when_released_turn_left: Box<dyn FnMut() + 'a>,
+    pub when_pressing_turn_right: Box<dyn FnMut() + 'a>,
+    pub when_released_turn_right: Box<dyn FnMut() + 'a>,
+    pub when_pressing_turn_up: Box<dyn FnMut() + 'a>,
+    pub when_released_turn_up: Box<dyn FnMut() + 'a>,
+    pub when_pressing_turn_down: Box<dyn FnMut() + 'a>,
+    pub when_released_turn_down: Box<dyn FnMut() + 'a>
 }
 
-impl KeyListener {
+impl<'a> KeyListener<'a> {
+    pub fn new() -> KeyListener<'a>{
+        return KeyListener { ..Default::default() };
+    }
+
 
     pub fn dismiss(&mut self) {
         self.should_stop = true;
     }
 }
 
-impl Default for KeyListener {
-    fn default() -> KeyListener {
+impl<'a> Default for KeyListener<'a> {
+    fn default() -> Self {
+        let spectre = || {};
+
         return KeyListener {
+            device_state: DeviceState::new(),
+
             forward: "W".to_owned(),
             backward: "S".to_owned(),
             left: "A".to_owned(),
@@ -115,55 +125,172 @@ impl Default for KeyListener {
             was_holding_turn_down: false,
 
             should_stop: false,
-            when_pressing_space: || return false,
-            when_released_space: || return false,
-            when_pressing_forward: || return false,
-            when_released_forward: || return false,
-            when_pressing_backward: || return false,
-            when_released_backward: || return false,
-            when_pressing_left: || return false,
-            when_released_left: || return false,
-            when_pressing_right: || return false,
-            when_released_right: || return false,
-            when_pressing_up: || return false,
-            when_released_up: || return false,
-            when_pressing_down: || return false,
-            when_released_down: || return false,
-            when_pressing_turn_left: || return false,
-            when_released_turn_left: || return false,
-            when_pressing_turn_right: || return false,
-            when_released_turn_right: || return false,
-            when_pressing_turn_up: || return false,
-            when_released_turn_up: || return false,
-            when_pressing_turn_down: || return false,
-            when_released_turn_down: || return false
+            when_pressing_forward: Box::new(spectre),
+            when_released_forward: Box::new(spectre),
+            when_pressing_backward: Box::new(spectre),
+            when_released_backward: Box::new(spectre),
+            when_pressing_left: Box::new(spectre),
+            when_released_left: Box::new(spectre),
+            when_pressing_right: Box::new(spectre),
+            when_released_right: Box::new(spectre),
+            when_pressing_up: Box::new(spectre),
+            when_released_up: Box::new(spectre),
+            when_pressing_down: Box::new(spectre),
+            when_released_down: Box::new(spectre),
+            when_pressing_turn_left: Box::new(spectre),
+            when_released_turn_left: Box::new(spectre),
+            when_pressing_turn_right: Box::new(spectre),
+            when_released_turn_right: Box::new(spectre),
+            when_pressing_turn_up: Box::new(spectre),
+            when_released_turn_up: Box::new(spectre),
+            when_pressing_turn_down: Box::new(spectre),
+            when_released_turn_down: Box::new(spectre)
         };
     }
 }
 
-pub fn listen(mut key_listener: KeyListener) {
-    // dont need this now
-    // let _handle = thread::spawn(move || {
-    //     loop {  }
-    // });
+pub fn listen(key_listener: &mut KeyListener, player: &mut Player) {
     if key_listener.should_stop {
         return;
     }
 
-    let input = getch();
+    let keys: Vec<Keycode> = key_listener.device_state.get_keys(); // how does this work ???
+    if !keys.is_empty() {
+        for (i, key) in keys.iter().enumerate() {
+            match key.to_string() {
+                key if key == key_listener.up => key_listener.is_holding_up = true,
+                key if key == key_listener.forward => key_listener.is_holding_forward = true,
+                key if key == key_listener.backward => key_listener.is_holding_backward = true,
+                key if key == key_listener.left => key_listener.is_holding_left = true,
+                key if key == key_listener.right => key_listener.is_holding_right = true,
+                key if key == key_listener.down => key_listener.is_holding_down = true,
+                key if key == key_listener.turn_left => key_listener.is_holding_turn_left = true,
+                key if key == key_listener.turn_right => key_listener.is_holding_turn_right = true,
+                key if key == key_listener.turn_up => key_listener.is_holding_turn_up = true,
+                key if key == key_listener.turn_down => key_listener.is_holding_turn_down = true,
 
-    match input {
-        32 => key_listener.is_holding_space = true,
-        _ => println!("nothing")
+                _ => _ = mvprintw(i as i32+1, 0, &("key: ".to_owned()+&key.to_string()))
+            }
+        }
     }
 
-    // space
-    if key_listener.is_holding_space {
-        key_listener.when_pressing_space;
-        key_listener.is_holding_space = false;
-        key_listener.was_holding_space = true;
-    } else {
-        key_listener.when_released_space;
-        key_listener.was_holding_space = false;
+    // forward
+    if key_listener.is_holding_forward {
+        mvprintw(0, 0, &("Holding forward".to_owned()));
+        (key_listener.when_pressing_forward)();
+        key_listener.was_holding_forward = true;
+        key_listener.is_holding_forward = false;
+    } else if key_listener.was_holding_forward && !key_listener.is_holding_forward { // when the user releases forward
+        (key_listener.when_released_forward)();
+        key_listener.was_holding_forward = false;
+        mvprintw(0, 0, &("Released forward".to_owned()));
+    }
+
+    // backward
+    if key_listener.is_holding_backward {
+        mvprintw(0, 0, &("Holding backward".to_owned()));
+        (key_listener.when_pressing_backward)();
+        key_listener.was_holding_backward = true;
+        key_listener.is_holding_backward = false;
+    } else if key_listener.was_holding_backward && !key_listener.is_holding_backward { // when the user releases backward
+        (key_listener.when_released_backward)();
+        key_listener.was_holding_backward = false;
+        mvprintw(0, 0, &("Released backward".to_owned()));
+    }
+
+    // left
+    if key_listener.is_holding_left {
+        mvprintw(0, 0, &("Holding left".to_owned()));
+        (key_listener.when_pressing_left)();
+        key_listener.was_holding_left = true;
+        key_listener.is_holding_left = false;
+    } else if key_listener.was_holding_left && !key_listener.is_holding_left { // when the user releases left
+        (key_listener.when_released_left)();
+        key_listener.was_holding_left = false;
+        mvprintw(0, 0, &("Released left".to_owned()));
+    }
+
+    // right
+    if key_listener.is_holding_right {
+        mvprintw(0, 0, &("Holding right".to_owned()));
+        (key_listener.when_pressing_right)();
+        key_listener.was_holding_right = true;
+        key_listener.is_holding_right = false;
+    } else if key_listener.was_holding_right && !key_listener.is_holding_right { // when the user releases right
+        (key_listener.when_released_right)();
+        key_listener.was_holding_right = false;
+        mvprintw(0, 0, &("Released right".to_owned()));
+    }
+
+    // up
+    if key_listener.is_holding_up {
+        mvprintw(0, 0, &("Holding up".to_owned()));
+        (key_listener.when_pressing_up)();
+        key_listener.was_holding_up = true;
+        key_listener.is_holding_up = false;
+    } else if key_listener.was_holding_up && !key_listener.is_holding_up { // when the user releases up
+        (key_listener.when_released_up)();
+        key_listener.was_holding_up = false;
+        mvprintw(0, 0, &("Released up".to_owned()));
+    }
+
+    // down
+    if key_listener.is_holding_down {
+        mvprintw(0, 0, &("Holding down".to_owned()));
+        (key_listener.when_pressing_down)();
+        key_listener.was_holding_down = true;
+        key_listener.is_holding_down = false;
+    } else if key_listener.was_holding_down && !key_listener.is_holding_down { // when the user releases down
+        (key_listener.when_released_down)();
+        key_listener.was_holding_down = false;
+        mvprintw(0, 0, &("Released down".to_owned()));
+    }
+
+    // turn_left
+    if key_listener.is_holding_turn_left {
+        mvprintw(0, 0, &("Holding turn_left".to_owned()));
+        (key_listener.when_pressing_turn_left)();
+        key_listener.was_holding_turn_left = true;
+        key_listener.is_holding_turn_left = false;
+    } else if key_listener.was_holding_turn_left && !key_listener.is_holding_turn_left { // when the user releases turn_left
+        (key_listener.when_released_turn_left)();
+        key_listener.was_holding_turn_left = false;
+        mvprintw(0, 0, &("Released turn_left".to_owned()));
+    }
+
+    // turn_right
+    if key_listener.is_holding_turn_right {
+        mvprintw(0, 0, &("Holding turn_right".to_owned()));
+        (key_listener.when_pressing_turn_right)();
+        key_listener.was_holding_turn_right = true;
+        key_listener.is_holding_turn_right = false;
+    } else if key_listener.was_holding_turn_right && !key_listener.is_holding_turn_right { // when the user releases turn_right
+        (key_listener.when_released_turn_right)();
+        key_listener.was_holding_turn_right = false;
+        mvprintw(0, 0, &("Released turn_right".to_owned()));
+    }
+
+    // turn_up
+    if key_listener.is_holding_turn_up {
+        mvprintw(0, 0, &("Holding turn_up".to_owned()));
+        (key_listener.when_pressing_turn_up)();
+        key_listener.was_holding_turn_up = true;
+        key_listener.is_holding_turn_up = false;
+    } else if key_listener.was_holding_turn_up && !key_listener.is_holding_turn_up { // when the user releases turn_up
+        (key_listener.when_released_turn_up)();
+        key_listener.was_holding_turn_up = false;
+        mvprintw(0, 0, &("Released turn_up".to_owned()));
+    }
+
+    // turn_down
+    if key_listener.is_holding_turn_down {
+        mvprintw(0, 0, &("Holding turn_down".to_owned()));
+        (key_listener.when_pressing_turn_down)();
+        key_listener.was_holding_turn_down = true;
+        key_listener.is_holding_turn_down = false;
+    } else if key_listener.was_holding_turn_down && !key_listener.is_holding_turn_down { // when the user releases turn_down
+        (key_listener.when_released_turn_down)();
+        key_listener.was_holding_turn_down = false;
+        mvprintw(0, 0, &("Released turn_down".to_owned()));
     }
 }
