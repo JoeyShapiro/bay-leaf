@@ -29,6 +29,7 @@ fn main() {
     
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+    start_color();
 
     let clock = Instant::now();
     let mut then = clock.elapsed().as_millis();
@@ -41,33 +42,28 @@ fn main() {
     let mut my_key_listener = key_listener::KeyListener::new();
     let mut player: Player = Player { position: point::Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }, theta: 0.0, phi: 0.0 };
 
-    let a = point::Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
-    let b = point::Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
-    let c = point::Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
-    let d = point::Point { x: 1.0, y: 1.0, z: 0.0, w: 1.0 };
-    let e = point::Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 };
-    let f = point::Point { x: 0.0, y: 1.0, z: 1.0, w: 1.0 };
-    let g = point::Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
-    let h = point::Point { x: 1.0, y: 0.0, z: 1.0, w: 1.0 };
+    // [PH] Blender Cube
+    let p0 = point::Point { x: 1.0, y: 1.0, z: -1.0, w: 1.0 };
+    let p1 = point::Point { x: 1.0, y: -1.0, z: -1.0, w: 1.0 };
+    let p2 = point::Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
+    let p3 = point::Point { x: 1.0, y: -1.0, z: 1.0, w: 1.0 };
+    let p4 = point::Point { x: -1.0, y: 1.0, z: -1.0, w: 1.0 };
+    let p5 = point::Point { x: -1.0, y: -1.0, z: -1.0, w: 1.0 };
+    let p6 = point::Point { x: -1.0, y: 1.0, z: 1.0, w: 1.0 };
+    let p7 = point::Point { x: -1.0, y: -1.0, z: 1.0, w: 1.0 };
 
-    // south
-    triangles.push(triangle::Triangle { a: a, b: b, c: c });
-    triangles.push(triangle::Triangle { a: a, b: d, c: c });
-    // east
-    triangles.push(triangle::Triangle { a: f, b: e, c: b });
-    triangles.push(triangle::Triangle { a: f, b: a, c: b });
-    // north
-    triangles.push(triangle::Triangle { a: g, b: h, c: f });
-    triangles.push(triangle::Triangle { a: g, b: e, c: f });
-    // west
-    triangles.push(triangle::Triangle { a: c, b: d, c: h });
-    triangles.push(triangle::Triangle { a: c, b: g, c: h });
-    // top
-    triangles.push(triangle::Triangle { a: f, b: a, c: c });
-    triangles.push(triangle::Triangle { a: f, b: g, c: c });
-    // bottom
-    triangles.push(triangle::Triangle { a: h, b: d, c: b });
-    triangles.push(triangle::Triangle { a: h, b: e, c: b });
+    triangles.push(triangle::Triangle { a: p0, b: p4, c: p6 });
+    triangles.push(triangle::Triangle { a: p2, b: p0, c: p6 });
+    triangles.push(triangle::Triangle { a: p3, b: p2, c: p6 });
+    triangles.push(triangle::Triangle { a: p7, b: p3, c: p6 });
+    triangles.push(triangle::Triangle { a: p7, b: p6, c: p4 });
+    triangles.push(triangle::Triangle { a: p5, b: p7, c: p4 });
+    triangles.push(triangle::Triangle { a: p5, b: p1, c: p3 });
+    triangles.push(triangle::Triangle { a: p7, b: p5, c: p3 });
+    triangles.push(triangle::Triangle { a: p1, b: p0, c: p2 });
+    triangles.push(triangle::Triangle { a: p3, b: p1, c: p2 });
+    triangles.push(triangle::Triangle { a: p5, b: p4, c: p0 });
+    triangles.push(triangle::Triangle { a: p1, b: p5, c: p0 });
 
     loop {
         let now = clock.elapsed().as_millis();
@@ -122,16 +118,22 @@ fn main() {
         //     phi = phi.rem_euclid(360);
         // }
 
+        init_pair(1, 2, COLOR_MAGENTA);
+        attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
             let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
             let tc = triangle::triangle_world_to_camera_space(player.position, tr); // apparently this goes AFTER rotation
             let tn = triangle::triangle_project(tc, max_x as f64, max_y as f64, projection_matrix);
 
+            if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
+            }
             triangle::draw_triangle(tn);
         }
 
         tick += 1.0;
 
+        init_pair(2, 8, 0);
+        attron(COLOR_PAIR(2));
         mvprintw(1, 0, &("x: ".to_owned()+&player.position.x.to_string()));
         mvprintw(2, 0, &("y: ".to_owned()+&player.position.y.to_string()));
         mvprintw(3, 0, &("z: ".to_owned()+&player.position.z.to_string()));
