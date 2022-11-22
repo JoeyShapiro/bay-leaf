@@ -8,6 +8,7 @@ pub mod point;
 pub mod triangle;
 pub mod key_listener;
 pub mod player;
+pub mod obj;
 
 const W_SIZE: i32 = 8;
 const MILLIS_PER_TICK: u128 = 10; // 1000 ~= 1sec; note for future me
@@ -26,6 +27,7 @@ fn main() {
     
     let fov: i32 = 90;
     let mut tick = 0.0;
+    let mut obj = obj::Obj::new("untitled.obj".to_string());
     
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
@@ -43,27 +45,29 @@ fn main() {
     let mut player: Player = Player { position: point::Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }, theta: 0.0, phi: 0.0 };
 
     // [PH] Blender Cube
-    let p0 = point::Point { x: 1.0, y: 1.0, z: -1.0, w: 1.0 };
-    let p1 = point::Point { x: 1.0, y: -1.0, z: -1.0, w: 1.0 };
-    let p2 = point::Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
-    let p3 = point::Point { x: 1.0, y: -1.0, z: 1.0, w: 1.0 };
-    let p4 = point::Point { x: -1.0, y: 1.0, z: -1.0, w: 1.0 };
-    let p5 = point::Point { x: -1.0, y: -1.0, z: -1.0, w: 1.0 };
-    let p6 = point::Point { x: -1.0, y: 1.0, z: 1.0, w: 1.0 };
-    let p7 = point::Point { x: -1.0, y: -1.0, z: 1.0, w: 1.0 };
+    // let p0 = point::Point { x: 1.0, y: 1.0, z: -1.0, w: 1.0 };
+    // let p1 = point::Point { x: 1.0, y: -1.0, z: -1.0, w: 1.0 };
+    // let p2 = point::Point { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
+    // let p3 = point::Point { x: 1.0, y: -1.0, z: 1.0, w: 1.0 };
+    // let p4 = point::Point { x: -1.0, y: 1.0, z: -1.0, w: 1.0 };
+    // let p5 = point::Point { x: -1.0, y: -1.0, z: -1.0, w: 1.0 };
+    // let p6 = point::Point { x: -1.0, y: 1.0, z: 1.0, w: 1.0 };
+    // let p7 = point::Point { x: -1.0, y: -1.0, z: 1.0, w: 1.0 };
 
-    triangles.push(triangle::Triangle { a: p0, b: p4, c: p6 });
-    triangles.push(triangle::Triangle { a: p2, b: p0, c: p6 });
-    triangles.push(triangle::Triangle { a: p3, b: p2, c: p6 });
-    triangles.push(triangle::Triangle { a: p7, b: p3, c: p6 });
-    triangles.push(triangle::Triangle { a: p7, b: p6, c: p4 });
-    triangles.push(triangle::Triangle { a: p5, b: p7, c: p4 });
-    triangles.push(triangle::Triangle { a: p5, b: p1, c: p3 });
-    triangles.push(triangle::Triangle { a: p7, b: p5, c: p3 });
-    triangles.push(triangle::Triangle { a: p1, b: p0, c: p2 });
-    triangles.push(triangle::Triangle { a: p3, b: p1, c: p2 });
-    triangles.push(triangle::Triangle { a: p5, b: p4, c: p0 });
-    triangles.push(triangle::Triangle { a: p1, b: p5, c: p0 });
+    // triangles.push(triangle::Triangle { a: p0, b: p4, c: p6 });
+    // triangles.push(triangle::Triangle { a: p2, b: p0, c: p6 });
+    // triangles.push(triangle::Triangle { a: p3, b: p2, c: p6 });
+    // triangles.push(triangle::Triangle { a: p7, b: p3, c: p6 });
+    // triangles.push(triangle::Triangle { a: p7, b: p6, c: p4 });
+    // triangles.push(triangle::Triangle { a: p5, b: p7, c: p4 });
+    // triangles.push(triangle::Triangle { a: p5, b: p1, c: p3 });
+    // triangles.push(triangle::Triangle { a: p7, b: p5, c: p3 });
+    // triangles.push(triangle::Triangle { a: p1, b: p0, c: p2 });
+    // triangles.push(triangle::Triangle { a: p3, b: p1, c: p2 });
+    // triangles.push(triangle::Triangle { a: p5, b: p4, c: p0 });
+    // triangles.push(triangle::Triangle { a: p1, b: p5, c: p0 });
+
+    triangles.append(&mut obj.mesh); // i think bottoms are missing
 
     loop {
         let now = clock.elapsed().as_millis();
