@@ -28,7 +28,7 @@ fn main() {
     
     let fov: i32 = 90;
     let mut tick = 0.0;
-    let mut obj = obj::Obj::new("res/untitled.obj".to_string());
+    let mut obj = obj::Obj::new("res/untitled.obj".to_string(), Point { x: 0.0, y: 0.0, z: 3.0, w: 1.0 });
 
     let projection_matrix = create_projection_matrix(24.0 / 80.0, 90.0, 0.1, 1000.0);
     
@@ -141,15 +141,21 @@ fn main() {
 
         let rot = Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
         let q = quaternion(player.phi, rot);
+        let rot_y = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
+        let q_y = quaternion(player.theta, rot_y);
 
         init_pair(1, 2, COLOR_MAGENTA);
         attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
-            // let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
-            let tc = triangle::triangle_world_to_camera_space(player.position, *triangle); // apparently this goes AFTER rotation
+            // local stuff
+            let tr = triangle::triangle_rot(*triangle, tick % 360.0, tick * 0.5 % 360.0, 0.0); // count*0.5, 0.0, count
+            let tw = triangle::triangle_local_to_world(tr, obj.pos);
+            // camera stuff
+            let tc = triangle::triangle_world_to_camera_space(player.position, tw); // apparently this goes AFTER rotation
             let to = triangle::triangle_mat_mul(tc, q);
-            // let tr = triangle::triangle_orbit_cam(player.position, tc, player.phi);
-            let tn = triangle::triangle_project(to, max_x as f64, max_y as f64, projection_matrix);
+            let ty = triangle::triangle_mat_mul(to, q_y);
+            // screen stuff
+            let tn = triangle::triangle_project(ty, max_x as f64, max_y as f64, projection_matrix);
 
             if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
             }

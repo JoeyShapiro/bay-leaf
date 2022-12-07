@@ -67,6 +67,14 @@ pub fn triangle_world_to_camera_space(camera: point::Point, triangle: Triangle) 
     }
 }
 
+pub fn triangle_local_to_world(tri: Triangle, pos: point::Point) -> Triangle {
+    return Triangle {
+        a: point::point_to_world(tri.a, pos),
+        b: point::point_to_world(tri.b, pos),
+        c: point::point_to_world(tri.c, pos),
+    }
+}
+
 pub fn triangle_orbit_cam(camera: point::Point, triangle: Triangle, theta: f64) -> Triangle {
     return Triangle {
         a: point::point_orbit_cam_x(triangle.a, camera, theta),

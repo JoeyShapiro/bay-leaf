@@ -8,7 +8,8 @@ pub struct Obj {
     pub mesh: Vec<triangle::Triangle>,
     normals: Vec<point::Point>,
     textures: Vec<point::Point>,
-    materials: String
+    materials: String,
+    pub pos: Point
 }
 
 struct Vertex {
@@ -18,8 +19,8 @@ struct Vertex {
 }
 
 impl Obj {
-    pub fn new(file_obj: String) -> Obj {
-        let result: Result<Obj, std::io::Error> = parse_obj(file_obj);
+    pub fn new(file_obj: String, pos: Point) -> Obj {
+        let result: Result<Obj, std::io::Error> = parse_obj(file_obj, pos);
         if result.is_err() {
             println!("{:?}", result.as_ref().err())
         } else {
@@ -31,7 +32,7 @@ impl Obj {
 }
 
 // this can not validate that a proper shape will be made, however it can check nothing is bad
-fn parse_obj(file: String) -> Result<Obj, Error> {
+fn parse_obj(file: String, pos: Point) -> Result<Obj, Error> {
     let mut name: String = "untitled".to_string();
     let mut points: Vec<Point> = Vec::new();
     let mut mesh: Vec<Triangle> = Vec::new();
@@ -88,7 +89,8 @@ fn parse_obj(file: String) -> Result<Obj, Error> {
         mesh: mesh,
         normals,
         textures,
-        materials: "".to_string()
+        materials: "".to_string(),
+        pos
     };
 
     return Ok(obj);
@@ -96,9 +98,11 @@ fn parse_obj(file: String) -> Result<Obj, Error> {
 
 // also handles vn and vt
 fn line_to_point(parts: Vec<&str>) -> Point {
+    // let magic = 3.0;
+
     // y, z are special, so is w
     let y = if parts.len() >= 3 { parts[2].trim().parse().unwrap() } else { 0.0 };
-    let z = if parts.len() == 4 { parts[3].trim().parse().unwrap() } else { 0.0 } + 3.0; // shouldnt be more, by std
+    let z = if parts.len() == 4 { parts[3].trim().parse().unwrap() } else { 0.0 }; // + magic; // shouldnt be more, by std
     Point { x: parts[1].parse().unwrap(), y, z, w: 1.0 }
 }
 

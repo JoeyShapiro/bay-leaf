@@ -128,6 +128,10 @@ pub fn point_to_camera_space(p: Point, camera: Point) -> Point {
     return Point { x: p.x - camera.x, y: p.y - camera.y, z: p.z - camera.z, w: 1.0 }
 }
 
+pub fn point_to_world(p: Point, pos: Point) -> Point {
+    return Point { x: p.x + pos.x, y: p.y + pos.y, z: p.z + pos.z, w: 1.0 };
+}
+
 pub fn point_orbit_cam_x(p: Point, camera: Point, theta: f64) -> Point {
     // X := originX + cos(angle)*radius;
     // Y := originY + sin(angle)*radius;
@@ -271,7 +275,6 @@ pub fn quaternion(theta: f64, rotator: Point) -> [[f64; 4]; 4] {
     let b = rotator.x / length * theta_q.sin();
     let c = rotator.y / length * theta_q.sin();
     let d = rotator.z / length * theta_q.sin();
-    println!("{} {} {} {} {}", a, b, c, d, rotator);
 
     // create the rotation matrix
     m[0][0] = 1.0 - 2.0 * (c*c + d*d);
