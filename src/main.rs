@@ -1,8 +1,9 @@
 use std::time::Instant;
 
 use ncurses::*;
+use point::Point;
 
-use crate::player::Player;
+use crate::{player::Player, point::{point_rot_y, point_at, quick_inverse, mat_rot_y, matrix_mul, matrix_mul_3d, mat_mul}};
 
 pub mod point;
 pub mod triangle;
@@ -27,8 +28,34 @@ fn main() {
     
     let fov: i32 = 90;
     let mut tick = 0.0;
-    let mut obj = obj::Obj::new("untitled.obj".to_string());
+    let mut obj = obj::Obj::new("res/untitled.obj".to_string());
+
+    let projection_matrix = create_projection_matrix(24.0 / 80.0, 90.0, 0.1, 1000.0);
     
+    let yaw = 100.0;
+    let pos = Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
+    let mut target = Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 };
+    let cam_rot = mat_rot_y(yaw);
+    println!("cam rot\n{:?}", cam_rot);
+    println!("target {}", target);
+    let look_dir = mat_mul(cam_rot, target);
+    println!("look dir {}", look_dir);
+    let up = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
+    target = point::point_add(pos, look_dir);
+
+    let mat_cam = point_at(pos, target, up);
+    println!("cam\n{:?}", mat_cam);
+    let mat_view = quick_inverse(mat_cam);
+    println!("inverse {:?}", mat_view);
+    
+    let to = triangle::triangle_mat_mul(obj.mesh[0], mat_view);
+    // println!("matmat\n{}\n{:?}", p, mat_view);
+    println!("view {}", to.a);
+    let tc = triangle::triangle_world_to_camera_space(pos, to);
+    let tn = triangle::triangle_project(tc, 80.0, 24.0, projection_matrix);
+    println!("{} -> {}", obj.mesh[0].a, tn.a);
+
+
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
     start_color();
@@ -122,11 +149,23 @@ fn main() {
         //     phi = phi.rem_euclid(360);
         // }
 
+        let origin = Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0};
+        let mut target = Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 };
+        let cam_rot = mat_rot_y(player.theta);
+        let look_dir = mat_mul(cam_rot, target);
+        let up = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
+        target = point::point_add(player.position, look_dir);
+
+        let mat_cam = point_at(player.position, target, up);
+        let mat_view = quick_inverse(mat_cam);
+
         init_pair(1, 2, COLOR_MAGENTA);
         attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
-            let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
-            let tc = triangle::triangle_world_to_camera_space(player.position, tr); // apparently this goes AFTER rotation
+            // let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
+            let to = triangle::triangle_mat_mul(*triangle, mat_view);
+            let tc = triangle::triangle_world_to_camera_space(player.position, to); // apparently this goes AFTER rotation
+            // let tr = triangle::triangle_orbit_cam(player.position, tc, player.phi);
             let tn = triangle::triangle_project(tc, max_x as f64, max_y as f64, projection_matrix);
 
             if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
@@ -186,6 +225,18 @@ fn draw_line(p1: point::Point, p2: point::Point) {
             mvprintw(y as i32, x, "x");
         }
     }
+}
+
+fn draw_point(p: point::Point) {
+    let pp = Point {
+        x: p.x.round(),
+        y: p.y.round(),
+        z: p.z.round(),
+        w: p.w.round()
+    };
+
+    mvprintw(p.y as i32, p.x as i32, "x");
+    mvprintw(p.y as i32 - 1, p.x as i32 + 1, &pp.to_string());
 }
 
 fn is_next_tick(now: u128, then: u128) -> bool {

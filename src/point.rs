@@ -26,14 +26,38 @@ impl Clone for Point {
 
 impl Copy for Point { }
 
-fn matrix_mul(p: Point, mat: [[f64; 4]; 4]) -> Point {
+pub fn matrix_mul(p: Point, mat: [[f64; 4]; 4]) -> Point {
     let point_prime = Point { // this needs +3 to z
-        x: p.x * mat[0][0] + p.y * mat[1][0] + (p.z+3.0) * mat[2][0] + p.w * mat[3][0], 
-        y: p.x * mat[0][1] + p.y * mat[1][1] + (p.z+3.0) * mat[2][1] + p.w * mat[3][1], 
-        z: p.x * mat[0][2] + p.y * mat[1][2] + (p.z+3.0) * mat[2][2] + p.w * mat[3][2], 
-        w: p.x * mat[0][3] + p.y * mat[1][3] + (p.z+3.0) * mat[2][3] + p.w * mat[3][3]
+        x: p.x * mat[0][0] + p.y * mat[1][0] + (p.z) * mat[2][0] + p.w * mat[3][0], 
+        y: p.x * mat[0][1] + p.y * mat[1][1] + (p.z) * mat[2][1] + p.w * mat[3][1], 
+        z: p.x * mat[0][2] + p.y * mat[1][2] + (p.z) * mat[2][2] + p.w * mat[3][2], 
+        w: p.x * mat[0][3] + p.y * mat[1][3] + (p.z) * mat[2][3] + p.w * mat[3][3]
+    };
+
+    println!("mat {}", point_prime);
+    
+    return point_prime;
+}
+
+pub fn matrix_mul_3d(p: Point, mat: [[f64; 4]; 4]) -> Point {
+    let point_prime = Point {
+        x: p.x * mat[0][0] + p.y * mat[1][0] + (p.z) * mat[2][0] + p.w * mat[3][0], 
+        y: p.x * mat[0][1] + p.y * mat[1][1] + (p.z) * mat[2][1] + p.w * mat[3][1], 
+        z: p.x * mat[0][2] + p.y * mat[1][2] + (p.z) * mat[2][2] + p.w * mat[3][2], 
+        w: 1.0
     };
     
+    return point_prime;
+}
+
+pub fn mat_mul(mat: [[f64; 4]; 4], p: Point) -> Point {
+    let point_prime = Point {
+        x: mat[0][0] * p.x + mat[0][1] * p.y + mat[0][2] * p.z + mat[0][3] * p.w,
+        y: mat[1][0] * p.x + mat[1][1] * p.y + mat[1][2] * p.z + mat[1][3] * p.w,
+        z: mat[2][0] * p.x + mat[2][1] * p.y + mat[2][2] * p.z + mat[2][3] * p.w,
+        w: 1.0
+    };
+
     return point_prime;
 }
 
@@ -102,4 +126,130 @@ pub fn point_rot_y(p: Point, theta: f64) -> Point {
 // putting space_to_player is confusing
 pub fn point_to_camera_space(p: Point, camera: Point) -> Point {
     return Point { x: p.x - camera.x, y: p.y - camera.y, z: p.z - camera.z, w: 1.0 }
+}
+
+pub fn point_orbit_cam_x(p: Point, camera: Point, theta: f64) -> Point {
+    // X := originX + cos(angle)*radius;
+    // Y := originY + sin(angle)*radius;
+    // x' := xcos(theta) - ysin(theta)
+    // y' := ycos(theta) - xsin(theta)
+
+    return Point { 
+        x: p.x,
+        y: p.y * theta.to_radians().cos() + p.z * theta.to_radians().sin(),
+        z: p.z * theta.to_radians().cos() - p.y * theta.to_radians().sin(),
+        w: p.w 
+    };
+}
+
+fn point_sub(p1: Point, p2: Point) -> Point {
+    return Point { x: p1.x - p2.x, y: p1.y - p2.y, z: p1.z - p2.z, w: 1.0 };
+}
+
+pub fn point_add(p1: Point, p2: Point) -> Point {
+    return Point { x: p1.x + p2.x, y: p1.y + p2.y, z: p1.z + p2.z, w: 1.0 };
+}
+
+fn point_dot(p1: Point, p2: Point) -> f64 {
+    return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z + 0.0 //p1.w * p2.w;
+}
+
+fn point_mul(p: Point, k: f64) -> Point {
+    return Point {
+        x: p.x * k,
+        y: p.y * k,
+        z: p.z * k,
+        w: 1.0 //p.w * k
+    };
+}
+
+fn point_norm(p: Point) -> Point {
+    let l = p.x * p.x + p.y * p.y + p.z * p.z;
+    return Point {
+        x: p.x / l,
+        y: p.y / l,
+        z: p.z / l,
+        w: 1.0
+    };
+}
+
+fn point_cross(p1: Point, p2: Point) -> Point {
+    return Point {
+        x: p1.y * p2.z - p1.z * p2.y,
+        y: p1.z * p2.x - p1.x * p2.z,
+        z: p1.x * p2.y - p1.y * p2.x,
+        w: 1.0
+    };
+}
+
+pub fn mat_rot_y(yaw: f64) -> [[f64; 4]; 4] {
+    let mut m = [[0.0f64; 4]; 4];
+    let y = yaw.to_radians();
+
+    m[0][0] = y.cos();
+    m[0][2] = -y.sin();
+    m[1][1] = 1.0;
+    m[0][2] = y.sin();
+    m[2][2] = y.cos();
+    m[3][3] = 1.0;
+
+    return m;
+}
+
+pub fn point_at(p: Point, target: Point, up: Point) -> [[f64; 4]; 4] {
+    let mut m = [[0.0f64; 4]; 4];
+    let forward = point_sub(target, p);
+
+    let a = point_mul(forward, point_dot(up, forward));
+    let tmp_up = point_sub(up, a);
+    let new_up = point_norm(tmp_up);
+
+    let new_right = point_cross(new_up, forward);
+
+    println!("stuff {} {} {}", new_right, new_up, forward);
+
+    m[0][0] = new_right.x;
+    m[1][0] = new_up.x;
+    m[2][0] = forward.x;
+    m[3][0] = p.x;
+
+    m[0][1] = new_right.y;
+    m[1][1] = new_up.y;
+    m[2][1] = forward.y;
+    m[3][1] = p.y;
+
+    m[0][2] = new_right.z;
+    m[1][2] = new_up.z;
+    m[2][2] = forward.z;
+    m[3][2] = p.z;
+
+    m[0][3] = 0.0;
+    m[1][3] = 0.0;
+    m[2][3] = 0.0;
+    m[3][3] = 1.0;
+
+    return m;
+}
+
+pub fn quick_inverse(mat: [[f64; 4]; 4]) -> [[f64; 4]; 4] {
+    let mut m = [[0.0f64; 4]; 4];
+
+    m[0][0] = mat[0][0];
+    m[1][0] = mat[0][1];
+    m[2][0] = mat[0][2];
+
+    m[0][1] = mat[1][0];
+    m[1][1] = mat[1][1];
+    m[2][0] = mat[1][2];
+    
+    m[0][2] = mat[2][0];
+    m[1][2] = mat[2][1];
+    m[2][2] = mat[2][2];
+
+    m[3][0] = - (mat[3][0] * m[0][0] + mat[3][1] * m[1][0] + mat[3][2] * m[2][0]);
+    m[3][1] = - (mat[3][0] * m[0][1] + mat[3][1] * m[1][1] + mat[3][2] * m[2][1]);
+    m[3][2] = - (mat[3][0] * m[0][2] + mat[3][1] * m[1][2] + mat[3][2] * m[2][2]);
+    m[3][3] = 1.0;
+
+    return m;
 }

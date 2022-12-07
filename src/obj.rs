@@ -40,7 +40,7 @@ fn parse_obj(file: String) -> Result<Obj, Error> {
 
     let mut f = File::open(file)?;
     let mut buffer = [0; 1];
-    let mut line: String = "".to_string();
+    let mut line: String;
     
     // read exactly 1 byte
     loop {
@@ -98,7 +98,7 @@ fn parse_obj(file: String) -> Result<Obj, Error> {
 fn line_to_point(parts: Vec<&str>) -> Point {
     // y, z are special, so is w
     let y = if parts.len() >= 3 { parts[2].trim().parse().unwrap() } else { 0.0 };
-    let z = if parts.len() == 4 { parts[3].trim().parse().unwrap() } else { 0.0 }; // shouldnt be more, by std
+    let z = if parts.len() == 4 { parts[3].trim().parse().unwrap() } else { 0.0 } + 3.0; // shouldnt be more, by std
     Point { x: parts[1].parse().unwrap(), y, z, w: 1.0 }
 }
 
@@ -111,7 +111,7 @@ fn line_to_face(parts: Vec<&str>, points: &Vec<point::Point>) -> Vec<Triangle> {
 
     let v1 = part_to_vertex(parts[1].to_string(), points.as_ref()).point;
     let mut v_prev = part_to_vertex(parts[2].trim().to_string(), points.as_ref()).point;
-    let v_cur = part_to_vertex(parts[3].to_string(), points.as_ref()).point;
+    let v_cur = part_to_vertex(parts[3].trim().to_string(), points.as_ref()).point;
 
     faces.push(Triangle { // first triangle
         a: v1,
@@ -130,7 +130,11 @@ fn line_to_face(parts: Vec<&str>, points: &Vec<point::Point>) -> Vec<Triangle> {
 
 fn part_to_vertex(part: String, points: &Vec<Point>) -> Vertex {
     let attrs: Vec<&str> = part.split("/").collect();
-    let i: usize = attrs[0].parse().unwrap();
+    let i: usize = match attrs[0].parse() {
+        Err(e) => panic!("error on \"{}\" : {}", part, e),
+        Ok(i) => i
+    };
+
     let point = points[i-1];
 
     return Vertex {

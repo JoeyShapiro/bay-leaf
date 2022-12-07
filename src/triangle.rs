@@ -1,3 +1,4 @@
+use crate::draw_point;
 use crate::point;
 use crate::draw_line;
 
@@ -17,9 +18,12 @@ impl Clone for Triangle {
 impl Copy for Triangle { }
 
 pub fn draw_triangle(tri: Triangle) {
+    draw_line(tri.c, tri.a);
     draw_line(tri.a, tri.b);
     draw_line(tri.b, tri.c);
-    draw_line(tri.c, tri.a);
+    // draw_point(tri.a);
+    // draw_point(tri.b);
+    // draw_point(tri.c);
 }
 
 pub fn triangle_project(tri: Triangle, width: f64, height: f64, perspective_matrix: [[f64; 4]; 4]) -> Triangle {
@@ -60,5 +64,21 @@ pub fn triangle_world_to_camera_space(camera: point::Point, triangle: Triangle) 
         a: point::point_to_camera_space(triangle.a, camera),
         b: point::point_to_camera_space(triangle.b, camera),
         c: point::point_to_camera_space(triangle.b, camera),
+    }
+}
+
+pub fn triangle_orbit_cam(camera: point::Point, triangle: Triangle, theta: f64) -> Triangle {
+    return Triangle {
+        a: point::point_orbit_cam_x(triangle.a, camera, theta),
+        b: point::point_orbit_cam_x(triangle.b, camera, theta),
+        c: point::point_orbit_cam_x(triangle.b, camera, theta)
+    }
+}
+
+pub fn triangle_mat_mul(tri: Triangle, mat: [[f64; 4]; 4]) -> Triangle {
+    return Triangle {
+        a: point::mat_mul(mat, tri.a),
+        b: point::mat_mul(mat, tri.b),
+        c: point::mat_mul(mat, tri.c),
     }
 }
