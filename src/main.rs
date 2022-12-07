@@ -3,7 +3,7 @@ use std::time::Instant;
 use ncurses::*;
 use point::Point;
 
-use crate::{player::Player, point::{point_rot_y, point_at, quick_inverse, mat_rot_y, matrix_mul, matrix_mul_3d, mat_mul}};
+use crate::{player::Player, point::{point_rot_y, point_at, quick_inverse, mat_rot_y, matrix_mul, matrix_mul_3d, mat_mul, quaternion}, triangle::triangle_mat_mul};
 
 pub mod point;
 pub mod triangle;
@@ -32,28 +32,18 @@ fn main() {
 
     let projection_matrix = create_projection_matrix(24.0 / 80.0, 90.0, 0.1, 1000.0);
     
-    let yaw = 100.0;
+    let theta = 60.0;
     let pos = Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
-    let mut target = Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 };
-    let cam_rot = mat_rot_y(yaw);
-    println!("cam rot\n{:?}", cam_rot);
-    println!("target {}", target);
-    let look_dir = mat_mul(cam_rot, target);
-    println!("look dir {}", look_dir);
-    let up = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
-    target = point::point_add(pos, look_dir);
-
-    let mat_cam = point_at(pos, target, up);
-    println!("cam\n{:?}", mat_cam);
-    let mat_view = quick_inverse(mat_cam);
-    println!("inverse {:?}", mat_view);
+    let rot = Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
+    let q = quaternion(theta, rot);
+    println!("q: {:?}", q);
     
-    let to = triangle::triangle_mat_mul(obj.mesh[0], mat_view);
-    // println!("matmat\n{}\n{:?}", p, mat_view);
-    println!("view {}", to.a);
+    let to = triangle_mat_mul(obj.mesh[0], q);
+    println!("to.a: {}", to.a);
+
     let tc = triangle::triangle_world_to_camera_space(pos, to);
     let tn = triangle::triangle_project(tc, 80.0, 24.0, projection_matrix);
-    println!("{} -> {}", obj.mesh[0].a, tn.a);
+    println!("tn.a: {}", tn.a);
 
 
     initscr();
@@ -149,24 +139,17 @@ fn main() {
         //     phi = phi.rem_euclid(360);
         // }
 
-        let origin = Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0};
-        let mut target = Point { x: 0.0, y: 0.0, z: 1.0, w: 1.0 };
-        let cam_rot = mat_rot_y(player.theta);
-        let look_dir = mat_mul(cam_rot, target);
-        let up = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
-        target = point::point_add(player.position, look_dir);
-
-        let mat_cam = point_at(player.position, target, up);
-        let mat_view = quick_inverse(mat_cam);
+        let rot = Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
+        let q = quaternion(player.phi, rot);
 
         init_pair(1, 2, COLOR_MAGENTA);
         attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
             // let tr = triangle::triangle_rot(*triangle, player.phi, player.theta, 0.0); // count*0.5, 0.0, count
-            let to = triangle::triangle_mat_mul(*triangle, mat_view);
-            let tc = triangle::triangle_world_to_camera_space(player.position, to); // apparently this goes AFTER rotation
+            let tc = triangle::triangle_world_to_camera_space(player.position, *triangle); // apparently this goes AFTER rotation
+            let to = triangle::triangle_mat_mul(tc, q);
             // let tr = triangle::triangle_orbit_cam(player.position, tc, player.phi);
-            let tn = triangle::triangle_project(tc, max_x as f64, max_y as f64, projection_matrix);
+            let tn = triangle::triangle_project(to, max_x as f64, max_y as f64, projection_matrix);
 
             if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
             }

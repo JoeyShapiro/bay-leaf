@@ -77,8 +77,8 @@ pub fn triangle_orbit_cam(camera: point::Point, triangle: Triangle, theta: f64) 
 
 pub fn triangle_mat_mul(tri: Triangle, mat: [[f64; 4]; 4]) -> Triangle {
     return Triangle {
-        a: point::mat_mul(mat, tri.a),
-        b: point::mat_mul(mat, tri.b),
-        c: point::mat_mul(mat, tri.c),
+        a: point::matrix_mul_3d(tri.a, mat),
+        b: point::matrix_mul_3d(tri.b, mat),
+        c: point::matrix_mul_3d(tri.c, mat),
     }
 }

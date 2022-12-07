@@ -98,6 +98,7 @@ np_pmat = np.array(projection_matrix)
 
 viewPort = []
 q = Q(60, 1, 0, 0)
+print(q)
 
 for point in points:
     tp = np.array(point)

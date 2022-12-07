@@ -253,3 +253,46 @@ pub fn quick_inverse(mat: [[f64; 4]; 4]) -> [[f64; 4]; 4] {
 
     return m;
 }
+
+pub fn quaternion(theta: f64, rotator: Point) -> [[f64; 4]; 4] {
+    let mut m = [[0.0f64; 4]; 4];
+
+    let theta_q = theta.to_radians() / 2.0;
+    let length = (rotator.x*rotator.x + rotator.y*rotator.y + rotator.z*rotator.z).sqrt();
+
+    // safety check
+    if length == 0.0 {
+        return m;
+    }
+
+    // find the quaterion stuff
+    // q = a + bi + cj + dk
+    let a = theta_q.cos();
+    let b = rotator.x / length * theta_q.sin();
+    let c = rotator.y / length * theta_q.sin();
+    let d = rotator.z / length * theta_q.sin();
+    println!("{} {} {} {} {}", a, b, c, d, rotator);
+
+    // create the rotation matrix
+    m[0][0] = 1.0 - 2.0 * (c*c + d*d);
+    m[0][1] = 2.0 * (b * c - a * d);
+    m[0][2] = 2.0 * (b * d + a * c);
+    m[0][3] = 0.0;
+
+    m[1][0] = 2.0 * (b*c + a*d);
+    m[1][1] = 1.0 - 2.0 * (b*b + d*d);
+    m[1][2] = 2.0 * (c*d - a*b);
+    m[1][3] = 0.0;
+
+    m[2][0] = 2.0*(b*d - a*c);
+    m[2][1] = 2.0*(c*d + a*b);
+    m[2][2] = 1.0 - 2.0*(b*b + c*c);
+    m[2][3] = 0.0;
+
+    m[3][0] = 0.0;
+    m[3][1] = 0.0;
+    m[3][2] = 0.0;
+    m[3][3] = 1.0;
+
+    return m;
+}
