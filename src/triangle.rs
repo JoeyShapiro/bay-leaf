@@ -1,3 +1,5 @@
+use ncurses::mvprintw;
+
 use crate::draw_point;
 use crate::point;
 use crate::draw_line;
@@ -17,13 +19,114 @@ impl Clone for Triangle {
 
 impl Copy for Triangle { }
 
+fn find_max_x(tri: Triangle) -> f64 {
+    if tri.a.x > tri.b.x && tri.a.x > tri.c.x {
+        return tri.a.x;
+    } else if tri.b.x > tri.a.x && tri.b.x > tri.c.x {
+        return tri.b.x;
+    }
+    return tri.c.x;
+}
+
+fn find_min_x(tri: Triangle) -> f64 {
+    if tri.a.x < tri.b.x && tri.a.x < tri.c.x {
+        return tri.a.x;
+    } else if tri.b.x < tri.a.x && tri.b.x < tri.c.x {
+        return tri.b.x;
+    }
+    return tri.c.x;
+}
+
+pub fn find_max_y(tri: Triangle) -> f64 {
+    if tri.a.y > tri.b.y && tri.a.y > tri.c.y {
+        return tri.a.y;
+    } else if tri.b.y > tri.a.y && tri.b.y > tri.c.y {
+        return tri.b.y;
+    }
+    return tri.c.y;
+}
+
+pub fn find_min_y(tri: Triangle) -> f64 {
+    if tri.a.y < tri.b.y && tri.a.y < tri.c.y {
+        return tri.a.y;
+    } else if tri.b.y < tri.a.y && tri.b.y < tri.c.y {
+        return tri.b.y;
+    }
+    return tri.c.y;
+}
+
+pub fn get_line(p1: point::Point, p2: point::Point) -> Vec<point::Point> {
+    let mut points: Vec<point::Point> = Vec::new();
+
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    
+    let min_x = if p1.x < p2.x { p1.x } else { p2.x }.floor() as i32;
+    let max_x = if p1.x < p2.x { p2.x } else { p1.x }.ceil() as i32;
+    
+    if min_x == max_x { // if inifite slope
+        let min_y = if p1.y < p2.y { p1.y } else { p2.y }.floor() as i32;
+        let max_y = if p1.y < p2.y { p2.y } else { p1.y }.ceil() as i32;
+
+        for y in min_y..max_y {
+            points.push(point::Point { x: min_x as f64, y: y as f64, z: 0.0, w: 0.0 }); // the x we choose doesnt matter; they are all the same
+        }
+    } else {
+        for x in min_x..max_x {
+            let y = p1.y + dy * (x as f64 - p1.x) / dx;
+            points.push(point::Point { x: x as f64, y, z: 0.0, w: 0.0 });
+        }
+    }
+
+    return points;
+}
+
 pub fn draw_triangle(tri: Triangle) {
-    draw_line(tri.c, tri.a);
-    draw_line(tri.a, tri.b);
-    draw_line(tri.b, tri.c);
+    // draw wireframe (redunant for fill)
+    // draw_line(tri.c, tri.a);
+    // draw_line(tri.a, tri.b);
+    // draw_line(tri.b, tri.c);
+
+    // draw vertices
     // draw_point(tri.a);
     // draw_point(tri.b);
     // draw_point(tri.c);
+
+    // draw the triangle and fill it in (super complex)
+    // get the ranges
+    let max_y = find_max_y(tri) as i32;
+    let min_y = find_min_y(tri) as i32;
+
+    let mut points = get_line(tri.a, tri.b);
+    points.append(&mut get_line(tri.b, tri.c));
+    points.append(&mut get_line(tri.c, tri.a));
+
+    // get the ranges (scanline algorithm)
+    // pair = [ y, min_x, max_x ]
+    let mut pairs: Vec<[i32; 3]> = Vec::new();
+    for y in min_y..max_y {
+        let mut pair = [y, 10000, 0];
+        // get min
+        for p in &points {
+            if p.y as i32 == y {
+                if (p.x as i32) < pair[1] {
+                    pair[1] = p.x as i32;
+                }
+                if (p.x as i32) > pair[2] {
+                    pair[2] = p.x as i32;
+                }
+            }
+        }
+
+        pairs.push(pair);
+    }
+
+    // draw the pixels (finally)
+    for pair in pairs {
+        for x in pair[1]..pair[2] {
+            mvprintw(pair[0], x, "x");
+        }
+    }
 }
 
 pub fn triangle_project(tri: Triangle, width: f64, height: f64, perspective_matrix: [[f64; 4]; 4]) -> Triangle {
@@ -63,7 +166,7 @@ pub fn triangle_world_to_camera_space(camera: point::Point, triangle: Triangle) 
     return Triangle {
         a: point::point_to_camera_space(triangle.a, camera),
         b: point::point_to_camera_space(triangle.b, camera),
-        c: point::point_to_camera_space(triangle.b, camera),
+        c: point::point_to_camera_space(triangle.c, camera), // this was a b and caused a major problem
     }
 }
 

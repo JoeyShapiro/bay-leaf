@@ -3,7 +3,7 @@ use std::time::Instant;
 use ncurses::*;
 use point::Point;
 
-use crate::{player::Player, point::{point_rot_y, point_at, quick_inverse, mat_rot_y, matrix_mul, matrix_mul_3d, mat_mul, quaternion}, triangle::triangle_mat_mul};
+use crate::{player::Player, point::{point_rot_y, point_at, quick_inverse, mat_rot_y, matrix_mul, matrix_mul_3d, mat_mul, quaternion}, triangle::{triangle_mat_mul, get_line}};
 
 pub mod point;
 pub mod triangle;
@@ -29,6 +29,9 @@ fn main() {
     let fov: i32 = 90;
     let mut tick = 0.0;
     let mut obj = obj::Obj::new("res/untitled.obj".to_string(), Point { x: 0.0, y: 0.0, z: 3.0, w: 1.0 });
+    println!("a {}", obj.mesh[0].a);
+    println!("b {}", obj.mesh[0].b);
+    println!("c {}", obj.mesh[0].c);
 
     let projection_matrix = create_projection_matrix(24.0 / 80.0, 90.0, 0.1, 1000.0);
     
@@ -36,15 +39,65 @@ fn main() {
     let pos = Point { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
     let rot = Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
     let q = quaternion(theta, rot);
-    println!("q: {:?}", q);
-    
-    let to = triangle_mat_mul(obj.mesh[0], q);
-    println!("to.a: {}", to.a);
-
-    let tc = triangle::triangle_world_to_camera_space(pos, to);
+    // local stuff
+    let tr = triangle::triangle_rot(obj.mesh[0], 50.0, 50.0 * 0.5, 0.0); // count*0.5, 0.0, count
+    let tw = triangle::triangle_local_to_world(tr, obj.pos);
+    println!("tw.a {}", tw.a);
+    println!("tw.b {}", tw.b);
+    println!("tw.c {}", tw.c);
+    // camera stuff
+    let tc = triangle::triangle_world_to_camera_space(pos, tw); // apparently this goes AFTER rotation
+    println!("tc.a {}", tc.a);
+    println!("tc.b {}", tc.b);
+    println!("tc.c {}", tc.c);
+    // let to = triangle::triangle_mat_mul(tc, q);
+    // let ty = triangle::triangle_mat_mul(to, q_y);
+    // screen stuff
     let tn = triangle::triangle_project(tc, 80.0, 24.0, projection_matrix);
-    println!("tn.a: {}", tn.a);
+    println!("tn.a {}", tn.a);
+    println!("tn.b {}", tn.b);
+    println!("tn.c {}", tn.c);
 
+    let mut points = get_line(tn.a, tn.b);
+    points.append(&mut get_line(tn.b, tn.c));
+    points.append(&mut get_line(tn.c, tn.a));
+
+    for point in points.iter() {
+        println!("{}", point);
+    }
+
+    let max_y = triangle::find_max_y(tn).ceil() as i32;
+    let min_y = triangle::find_min_y(tn).floor() as i32;
+
+    println!("max: {}; min: {}", max_y, min_y);
+    
+    // get the ranges (scanline algorithm)
+    // pair = [ y, min_x, max_x ]
+    let mut pairs: Vec<[i32; 3]> = Vec::new();
+    for y in min_y..max_y {
+        let mut pair = [y, 10000, 0];
+        // get min
+        for p in &points {
+            if p.y.round() as i32 == y {
+                if (p.x as i32) < pair[1] {
+                    pair[1] = p.x as i32;
+                }
+                if (p.x as i32) > pair[2] {
+                    pair[2] = p.x as i32;
+                }
+            }
+        }
+
+        pairs.push(pair);
+    }
+
+    // draw the pixels (finally)
+    for pair in pairs {
+        println!("{} {} {}", pair[0], pair[1], pair[2]);
+        // for x in pair[1]..pair[2] {
+        //     println!("({}, {})", x, pair[0]);
+        // }
+    }
 
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
@@ -148,7 +201,7 @@ fn main() {
         attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
             // local stuff
-            let tr = triangle::triangle_rot(*triangle, tick % 360.0, tick * 0.5 % 360.0, 0.0); // count*0.5, 0.0, count
+            let tr = triangle::triangle_rot(*triangle, 50.0,50.0 * 0.5, 0.0); // count*0.5, 0.0, count
             let tw = triangle::triangle_local_to_world(tr, obj.pos);
             // camera stuff
             let tc = triangle::triangle_world_to_camera_space(player.position, tw); // apparently this goes AFTER rotation
@@ -160,6 +213,7 @@ fn main() {
             if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
             }
             triangle::draw_triangle(tn);
+            break;
         }
 
         tick += 1.0;
