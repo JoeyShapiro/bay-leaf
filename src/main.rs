@@ -28,6 +28,8 @@ fn main() {
     
     let fov: i32 = 90;
     let mut tick = 0.0;
+
+    let mut tps = 0.0;
     let mut obj = obj::Obj::new("res/untitled.obj".to_string(), Point { x: 0.0, y: 0.0, z: 3.0, w: 1.0 });
     println!("a {}", obj.mesh[0].a);
     println!("b {}", obj.mesh[0].b);
@@ -107,6 +109,7 @@ fn main() {
             continue;
         }
 
+        tps = 1.0 / (now - then) as f64 * 100.0;
         then = now;
 
         clear();
@@ -188,6 +191,7 @@ fn main() {
         mvprintw(5, 0, &("phi: ".to_owned()+&player.phi.to_string()));
         mvprintw(6, 0, &("fov: ".to_owned()+&fov.to_string()));
         mvprintw(7, 0, &("tick: ".to_owned()+&tick.to_string()));
+        mvprintw(8, 0, &("tps: ".to_owned()+&tps.to_string()));
 
         refresh();
     }
