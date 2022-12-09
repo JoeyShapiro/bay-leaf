@@ -9,7 +9,7 @@ def determineline(x0, y0, x1, y1, s):
         return drawline(x0, y0, x1, y1, False, False, s)
     elif -1 < (y1-y0)/(x1-x0) < 0:
         print((y1-y0)/(x1-x0))
-        return drawline(y0, x0, y1, x1, False, True, s)
+        return drawline(x0, -y0, x1, -y1, False, True, s)
     else:
         return drawline(-y0, x0, -y1, x1, True, True, s)
 
@@ -46,18 +46,21 @@ def drawline(x0, y0, x1, y1, d, neg, s):
     return verts
 
 
-tri = [
-    [round(44.27682931495777), round(18.286878583975383)],
-    [round(39.206095894036), round(11.68526512042876)],
-    [round(37.099700537027594), round(16.783367572196525)]
+tri_n = [
+    [46.00000000000001, 6],
+    [37, 8.999999999999998],
+    [43, 9]
 ]
+
+tri = [ [ round(p[0]), round(p[1]) ] for p in tri_n ]
+
 
 points = []
 
 print(tri)
 points  = determineline(tri[0][0], tri[0][1], tri[1][0], tri[1][1], 'o')
-points += determineline(tri[1][0], tri[1][1], tri[2][0], tri[2][1], 's')
-points += determineline(tri[2][0], tri[2][1], tri[0][0], tri[0][1], '+')
+# points += determineline(tri[1][0], tri[1][1], tri[2][0], tri[2][1], 's')
+# points += determineline(tri[2][0], tri[2][1], tri[0][0], tri[0][1], '+')
 
 print(points)
 
@@ -89,15 +92,9 @@ for pair in pairs:
     plt.plot(pair[1], pair[0], marker="o", markersize=5, markeredgecolor="blue", markerfacecolor="green")
     plt.plot(pair[2], pair[0], marker="o", markersize=5, markeredgecolor="blue", markerfacecolor="green")
 
-tri = [
-    [44.27682931495777, 18.286878583975383],
-    [39.206095894036, 11.68526512042876],
-    [37.099700537027594, 16.783367572196525]
-]
-
-plt.plot((tri[0][0], tri[1][0]), (tri[0][1], tri[1][1]))
-plt.plot((tri[1][0], tri[2][0]), (tri[1][1], tri[2][1]))
-plt.plot((tri[2][0], tri[0][0]), (tri[2][1], tri[0][1]))
+plt.plot((tri_n[0][0], tri_n[1][0]), (tri_n[0][1], tri_n[1][1]))
+plt.plot((tri_n[1][0], tri_n[2][0]), (tri_n[1][1], tri_n[2][1]))
+plt.plot((tri_n[2][0], tri_n[0][0]), (tri_n[2][1], tri_n[0][1]))
 
 plt.grid()
 plt.show()

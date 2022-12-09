@@ -34,7 +34,7 @@ pub fn matrix_mul(p: Point, mat: [[f64; 4]; 4]) -> Point {
         w: p.x * mat[0][3] + p.y * mat[1][3] + (p.z) * mat[2][3] + p.w * mat[3][3]
     };
 
-    println!("mat {}", point_prime);
+    // println!("mat {}", point_prime);
     
     return point_prime;
 }
@@ -210,7 +210,7 @@ pub fn point_at(p: Point, target: Point, up: Point) -> [[f64; 4]; 4] {
 
     let new_right = point_cross(new_up, forward);
 
-    println!("stuff {} {} {}", new_right, new_up, forward);
+    // println!("stuff {} {} {}", new_right, new_up, forward);
 
     m[0][0] = new_right.x;
     m[1][0] = new_up.x;

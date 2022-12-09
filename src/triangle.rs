@@ -1,8 +1,6 @@
 use ncurses::mvprintw;
 
-use crate::draw_point;
 use crate::point;
-use crate::draw_line;
 
 // this will go counter-clockwise
 pub struct Triangle {
@@ -19,30 +17,6 @@ impl Clone for Triangle {
 
 impl Copy for Triangle { }
 
-fn find_max_x(tri: Triangle) -> f64 {
-    if tri.a.x > tri.b.x && tri.a.x > tri.c.x {
-        return tri.a.x;
-    } else if tri.b.x > tri.a.x && tri.b.x > tri.c.x {
-        return tri.b.x;
-    }
-    return tri.c.x;
-}
-
-fn find_min_x(tri: Triangle) -> f64 {
-    if tri.a.x < tri.b.x && tri.a.x < tri.c.x {
-        return tri.a.x;
-    } else if tri.b.x < tri.a.x && tri.b.x < tri.c.x {
-        return tri.b.x;
-    }
-    return tri.c.x;
-}
-// ($($args:expr),*) => {{
-//     let result = 0;
-//     $(
-//         let result = result + $args;
-//     )*
-//     result
-// }}
 macro_rules! min {
     ($($args:expr),*) => {{
         let result = 100000;
@@ -51,15 +25,6 @@ macro_rules! min {
         )*
         result
     }}
-    // ($x:expr) => ( $x );
-    // ($x:expr, $($xs:expr),+) => {
-    //     let result = 0;
-    //     {
-    //         let m = min!( $($xs),+ );
-    //         let result = if $x < m { $x } else { m };
-    //         result;
-    //     }
-    // };
 }
 
 macro_rules! max {
@@ -70,15 +35,6 @@ macro_rules! max {
         )*
         result
     }}
-    // ($x:expr) => ( $x );
-    // ($x:expr, $($xs:expr),+) => {
-    //     let result = 0;
-    //     {
-    //         let m = min!( $($xs),+ );
-    //         let result = if $x < m { $x } else { m };
-    //         result;
-    //     }
-    // };
 }
 
 pub fn find_max_y(tri: Triangle) -> f64 {
@@ -115,7 +71,7 @@ fn determine_line(p1: Pixel, p2: Pixel) -> Vec<Pixel> {
         } else if 0.0 <= slope && slope <= 1.0 {
             get_line(p1.x, p1.y, p2.x, p2.y, false, false)
         } else if -1.0 <= slope && slope < 0.0 {
-            get_line(p1.y, p1.x, p2.y, p2.x, false, true)
+            get_line(p1.x, -p1.y, p2.x, -p2.y, false, true)
         } else { // slope < -1
             get_line(-p1.y, p1.x, -p2.y, p2.x, true, true)
         };
@@ -157,15 +113,10 @@ pub fn get_line(x1: i32, y1: i32, x2: i32, y2: i32, large: bool, neg: bool) -> V
         x += 1;
     }
 
-    println!("new");
-    for pixel in pixels.iter() {
-        println!("{}, {}", pixel.x, pixel.y);
-    }
-
     return pixels;
 }
 
-pub fn draw_triangle(tri: Triangle) {
+pub fn draw_triangle(tri: Triangle, outline: bool) {
     // draw wireframe (redunant for fill)
     // draw_line(tri.c, tri.a);
     // draw_line(tri.a, tri.b);
@@ -186,11 +137,6 @@ pub fn draw_triangle(tri: Triangle) {
     let mut points = determine_line(a, b);
     points.append(&mut determine_line(b, c));
     points.append(&mut determine_line(c, a));
-
-    println!("pixels");
-    for p in points.iter() {
-        println!("{}, {}", p.x, p.y);
-    }
 
     let min_y = min!(a.y, b.y, c.y);
     let max_y = max!(a.y, b.y, c.y);
@@ -217,9 +163,15 @@ pub fn draw_triangle(tri: Triangle) {
 
     // draw the pixels (finally)
     for pair in pairs {
-        println!("{:?}", pair);
         for x in pair[1]..pair[2] {
-            mvprintw(pair[0], x, "x");
+            mvprintw(pair[0], x, " ");
+        }
+    }
+
+    if outline {
+        // this is essentially the wireframe and thus saves resources
+        for point in points {
+            mvprintw(point.y, point.x, "x");
         }
     }
 }

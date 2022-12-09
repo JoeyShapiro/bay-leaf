@@ -40,7 +40,7 @@ fn main() {
     let rot = Point { x: 1.0, y: 0.0, z: 0.0, w: 1.0 };
     let q = quaternion(theta, rot);
     // local stuff
-    let tr = triangle::triangle_rot(obj.mesh[0], 50.0, 50.0 * 0.5, 0.0); // count*0.5, 0.0, count
+    let tr = triangle::triangle_rot(obj.mesh[0], 180.0, 180.0 * 0.5, 0.0); // count*0.5, 0.0, count
     let tw = triangle::triangle_local_to_world(tr, obj.pos);
     println!("tw.a {}", tw.a);
     println!("tw.b {}", tw.b);
@@ -58,7 +58,7 @@ fn main() {
     println!("tn.b {}", tn.b);
     println!("tn.c {}", tn.c);
 
-    triangle::draw_triangle(tn);
+    triangle::draw_triangle(tn, false);
 
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
@@ -158,11 +158,11 @@ fn main() {
         let rot_y = Point { x: 0.0, y: 1.0, z: 0.0, w: 1.0 };
         let q_y = quaternion(player.theta, rot_y);
 
-        init_pair(1, 2, COLOR_MAGENTA);
+        init_pair(1, 14, COLOR_MAGENTA);
         attron(COLOR_PAIR(1));
         for triangle in triangles.iter() {
             // local stuff
-            let tr = triangle::triangle_rot(*triangle, 50.0,50.0 * 0.5, 0.0); // count*0.5, 0.0, count
+            let tr = triangle::triangle_rot(*triangle, tick, tick * 0.5, 0.0); // count*0.5, 0.0, count
             let tw = triangle::triangle_local_to_world(tr, obj.pos);
             // camera stuff
             let tc = triangle::triangle_world_to_camera_space(player.position, tw); // apparently this goes AFTER rotation
@@ -173,8 +173,8 @@ fn main() {
 
             if tn.a.x <= tn.b.x && tn.c.x >= tn.b.x {
             }
-            triangle::draw_triangle(tn);
-            break;
+            triangle::draw_triangle(tn, true);
+            // break;
         }
 
         tick += 1.0;
