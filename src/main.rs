@@ -58,46 +58,7 @@ fn main() {
     println!("tn.b {}", tn.b);
     println!("tn.c {}", tn.c);
 
-    let mut points = get_line(tn.a, tn.b);
-    points.append(&mut get_line(tn.b, tn.c));
-    points.append(&mut get_line(tn.c, tn.a));
-
-    for point in points.iter() {
-        println!("{}", point);
-    }
-
-    let max_y = triangle::find_max_y(tn).ceil() as i32;
-    let min_y = triangle::find_min_y(tn).floor() as i32;
-
-    println!("max: {}; min: {}", max_y, min_y);
-    
-    // get the ranges (scanline algorithm)
-    // pair = [ y, min_x, max_x ]
-    let mut pairs: Vec<[i32; 3]> = Vec::new();
-    for y in min_y..max_y {
-        let mut pair = [y, 10000, 0];
-        // get min
-        for p in &points {
-            if p.y.round() as i32 == y {
-                if (p.x as i32) < pair[1] {
-                    pair[1] = p.x as i32;
-                }
-                if (p.x as i32) > pair[2] {
-                    pair[2] = p.x as i32;
-                }
-            }
-        }
-
-        pairs.push(pair);
-    }
-
-    // draw the pixels (finally)
-    for pair in pairs {
-        println!("{} {} {}", pair[0], pair[1], pair[2]);
-        // for x in pair[1]..pair[2] {
-        //     println!("({}, {})", x, pair[0]);
-        // }
-    }
+    triangle::draw_triangle(tn);
 
     initscr();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);

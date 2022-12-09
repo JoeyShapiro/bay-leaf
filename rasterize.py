@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 
 # function for line generation
 def determineline(x0, y0, x1, y1, s):
+    print(f'slope = {(y1-y0)/(x1-x0)}')
     if (y1-y0)/(x1-x0) > 1:
         return drawline(y0, x0, y1, x1, True, False, s)
     elif 0 < (y1-y0)/(x1-x0) < 1:
@@ -59,23 +60,6 @@ points += determineline(tri[1][0], tri[1][1], tri[2][0], tri[2][1], 's')
 points += determineline(tri[2][0], tri[2][1], tri[0][0], tri[0][1], '+')
 
 print(points)
-# points.append(( 39, 11.41694783456316))
-# points.append(( 40, 12.71885288764847))
-# points.append(( 41, 14.02075794073378))
-# points.append(( 42, 15.322662993819092))
-# points.append(( 43, 16.624568046904404))
-# points.append(( 44, 17.926473099989714))
-# points.append(( 37, 17.02467248704633))
-# points.append(( 38, 14.604375445085358))
-# points.append(( 39, 12.184078403124385))
-# points.append(( 37, 16.762481663647385))
-# points.append(( 38, 16.97196808339816))
-# points.append(( 39, 17.181454503148938))
-# points.append(( 40, 17.390940922899713))
-# points.append(( 41, 17.60042734265049))
-# points.append(( 42, 17.809913762401266))
-# points.append(( 43, 18.019400182152044))
-# points.append(( 44, 18.22888660190282))
 
 min_y = round(min(points, key=lambda tup: tup[1])[1])
 max_y = round(max(points, key=lambda tup: tup[1])[1])
